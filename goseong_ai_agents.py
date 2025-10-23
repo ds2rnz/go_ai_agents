@@ -32,8 +32,8 @@ import time
 import base64
 from langchain.schema import AIMessage
 
-load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# load_dotenv()
+OPENAI_API_KEY = "OPENAI_API_KEY"
 
 client = OpenAI()
 
