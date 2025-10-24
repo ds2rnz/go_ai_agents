@@ -14,16 +14,16 @@ from typing import TypedDict, Annotated, List
 from langgraph.graph import StateGraph, END
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import tempfile
 import ast
 import operator
 
-# from langchain.chains import RetrievalQA
+# from langchain.agents import create_retrieval_chain
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
-from langchain.chains import create_retrieval_chain
+from langchain_classic.tools.retriever import create_retriever_tool
+
 
 import concurrent.futures
 import traceback
@@ -31,6 +31,7 @@ import inspect
 import time
 import base64
 from langchain import AIMessage
+import tempfile
 
 # load_dotenv()
 
@@ -261,7 +262,7 @@ def answer_question(query: str, timeout_sec: int = 60):
 
        
         # QA Chain 생성
-        qa_chain = create_retrieval_chain(
+        qa_chain = create_retriever_tool(
             llm=llm,  # llm 가져오기
             chain_type="stuff",
             retriever=retriever,
