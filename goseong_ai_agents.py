@@ -13,7 +13,7 @@ import os
 from typing import TypedDict, Annotated, List
 from langgraph.graph import StateGraph, END
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 import tempfile
 import ast
 import operator
@@ -21,7 +21,7 @@ import operator
 from langchain.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 # from langchain_chroma import Chroma
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
 
@@ -30,10 +30,15 @@ import traceback
 import inspect
 import time
 import base64
-from langchain.schema import AIMessage
+from langchain import AIMessage
 
 # load_dotenv()
+
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
 OPENAI_API_KEY = "OPENAI_API_KEY"
+
 
 client = OpenAI()
 
