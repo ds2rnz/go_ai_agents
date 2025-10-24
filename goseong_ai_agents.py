@@ -18,11 +18,12 @@ import tempfile
 import ast
 import operator
 
-from langchain_community.chains import RetrievalQA
+# from langchain.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
+from langchain.chains import create_retrieval_chain
 
 import concurrent.futures
 import traceback
@@ -260,7 +261,7 @@ def answer_question(query: str, timeout_sec: int = 60):
 
        
         # QA Chain 생성
-        qa_chain = RetrievalQA.from_chain_type(
+        qa_chain = create_retrieval_chain(
             llm=llm,  # llm 가져오기
             chain_type="stuff",
             retriever=retriever,
