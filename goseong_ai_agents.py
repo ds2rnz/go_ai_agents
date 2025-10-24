@@ -18,7 +18,7 @@ import tempfile
 import ast
 import operator
 
-from langchain.chains import RetrievalQA
+from langchain_community.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
