@@ -17,13 +17,12 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import ast
 import operator
 
-# from langchain.agents import create_retrieval_chain
+
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
 from langchain_classic.tools.retriever import create_retriever_tool
-
 
 import concurrent.futures
 import traceback
