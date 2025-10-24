@@ -20,7 +20,6 @@ import operator
 
 from langchain.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
-# from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
