@@ -17,7 +17,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import ast
 import operator
 
-
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
@@ -36,10 +35,10 @@ import tempfile
 # OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
-OPENAI_API_KEY = "OPENAI_API_KEY"
+# OPENAI_API_KEY = "OPENAI_API_KEY"
 
 
-client = OpenAI()
+client = OpenAI(api_key = "OPENAI_API_KEY")   
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
@@ -359,7 +358,7 @@ def process1_f(uploaded_files1):
             # Embedding 생성
             embedding = OpenAIEmbeddings(
                 model="text-embedding-3-large", 
-                api_key=OPENAI_API_KEY
+                api_key="OPENAI_API_KEY"
             )
             
             # 저장 디렉토리 설정
