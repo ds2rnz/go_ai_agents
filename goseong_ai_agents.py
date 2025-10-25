@@ -1,5 +1,6 @@
 import streamlit as st
 from langchain_community.chat_models import ChatOpenAI
+from langchain.agents import create_agent
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
@@ -189,8 +190,8 @@ def get_web_search(query: str, search_period: str) -> str:
 
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
-llm_with_tools = llm.bind_tools(tools) # tool 사용 llm 정의
-
+# llm_with_tools = llm.bind_tools(tools) # tool 사용 llm 정의
+llm_with_tools = create_agent(llm, tools)
 
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
