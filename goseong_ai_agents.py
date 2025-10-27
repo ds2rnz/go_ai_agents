@@ -335,7 +335,7 @@ def process1_f(uploaded_files1):
             # Embedding 생성
             embedding = OpenAIEmbeddings(
                 model="text-embedding-3-large", 
-                api_key="OPENAI_API_KEY"
+                api_key=OPENAI_API_KEY
             )
             
             # 저장 디렉토리 설정
