@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_community.chat_models import ChatOpenAI
-from langchain.agents import create_agent
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain.tools import tool
+from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
 
@@ -18,7 +18,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import ast
 import operator
 
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
@@ -31,9 +31,9 @@ import time
 import base64
 import tempfile
 
-# load_dotenv()
+load_dotenv()
 
-# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 # OPENAI_API_KEY = "OPENAI_API_KEY"
@@ -54,27 +54,6 @@ class GraphState(TypedDict):
     pdf_content: str
     chunks: List[str]
     analysis_result: str
-
-
-# 개발시 필요한 함수 / 에러 추출
-# def debug_wrap(func):
-#     """함수 실행 시 에러나 중단점을 추적하기 위한 디버깅 래퍼"""
-#     def wrapper(*args, **kwargs):
-#         func_name = func.__name__
-#         try:
-#             print(f"[DEBUG] ▶ 실행 시작: {func_name}")
-#             result = func(*args, **kwargs)
-#             print(f"[DEBUG] ✅ 실행 성공: {func_name}")
-#             return result
-#         except Exception as e:
-#             tb = traceback.format_exc()
-#             print(f"\n[ERROR] ❌ 함수 '{func_name}' 에서 예외 발생:")
-#             print(f"  └─ {e}")
-#             print(tb)
-#             st.error(f"❌ 함수 '{func_name}' 실행 중 오류 발생: {e}")
-#             st.code(tb, language="python")
-#             raise
-#     return wrapper
 
 
 # PDF 처리 함수들 
@@ -190,8 +169,8 @@ def get_web_search(query: str, search_period: str) -> str:
 
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
-# llm_with_tools = llm.bind_tools(tools) # tool 사용 llm 정의
-llm_with_tools = create_agent(llm, tools)
+llm_with_tools = llm.bind_tools(tools) # tool 사용 llm 정의
+# llm_with_tools = create_agent(llm, tools)
 
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
@@ -218,7 +197,7 @@ def get_ai_response(messages):
 
 # @debug_wrap / 에러 확인 함수 요청
 def answer_question(query: str, timeout_sec: int = 60):
-    """LLM 기반 PDF QA - ThreadExecutor 제거한 안정적인 버전"""
+    """LLM 기반 PDF QA """
 
     st.write("🚀 질문 처리 시작")
     start_time = time.time()
@@ -784,7 +763,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
-            response = get_ai_response(st.session_state["messages"])
+            response = get_ai_response(st.session_state.messages)
             result = st.chat_message("assistant").write_stream(response)
             st.session_state["messages"].append(AIMessage(result))
         else:
