@@ -31,15 +31,13 @@ import time
 import base64
 import tempfile
 
-load_dotenv()
+# load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+OPENAI_API_KEY = "OPENAI_API_KEY"
 
-# OPENAI_API_KEY = "OPENAI_API_KEY"
-
-
-client = OpenAI(api_key = "OPENAI_API_KEY")   
+# client = OpenAI(api_key = "OPENAI_API_KEY")   
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
@@ -240,10 +238,9 @@ def answer_question(query: str, timeout_sec: int = 60):
        
         # QA Chain 생성
         qa_chain = create_retriever_tool(
-            llm=llm,  # llm 가져오기
-            chain_type="stuff",
             retriever=retriever,
-            return_source_documents=True,
+            name="document_search",
+            description="문서 기반 질의응답을 수행합니다."
             )
         st.write("✅ 유사도 연결 생성 완료")
 
