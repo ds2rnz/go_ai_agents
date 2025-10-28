@@ -192,7 +192,7 @@ def get_ai_response(messages):
                     except Exception as e:
                         st.error(f"도구 실행 오류:{e}")
         # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(messages)
+        yield from get_ai_response(st.session_state["messages"])
 
 
 # @debug_wrap / 에러 확인 함수 요청
