@@ -8,7 +8,7 @@ from datetime import datetime
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 import os
 
 from typing import TypedDict, Annotated, List
@@ -31,13 +31,12 @@ import time
 import base64
 import tempfile
 
-# load_dotenv()
+load_dotenv()
 
 # OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-OPENAI_API_KEY = "OPENAI_API_KEY"
-
 # client = OpenAI(api_key = "OPENAI_API_KEY")   
+
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
@@ -335,7 +334,7 @@ def process1_f(uploaded_files1):
             # Embedding 생성
             embedding = OpenAIEmbeddings(
                 model="text-embedding-3-large", 
-                api_key=OPENAI_API_KEY
+                api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
             )
             
             # 저장 디렉토리 설정
