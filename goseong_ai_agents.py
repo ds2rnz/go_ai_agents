@@ -175,29 +175,32 @@ llm_with_tools = create_agent(
 
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
-    response = llm_with_tools.stream(messages)
-    st.write_stream(response)
-    gathered = None
-    for chunk in response:
-        yield chunk
-        if gathered is None:
-            gathered = chunk
-        else:
-            gathered += chunk
+    try:
+        response = llm_with_tools.stream(messages)
+        gathered = None
+        for chunk in response:
+            yield chunk
+            if gathered is None:
+                gathered = chunk
+            else:
+                gathered += chunk
 
-    if gathered and getattr(gathered, "tool_calls", None):
-        st.session_state.messages.append(gathered)
-        for tool_call in gathered.tool_calls:
-            selected_tool = tool_dict.get(tool_call['name'])
-            if selected_tool:
-                with st.spinner("도구 실행 중..."):
-                    try:
-                        tool_msg = selected_tool.invoke(tool_call)
-                        st.session_state.messages.append(tool_msg)
-                    except Exception as e:
-                        st.error(f"도구 실행 오류:{e}")
-        # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(st.session_state["messages"])
+        if gathered and getattr(gathered, "tool_calls", None):
+            st.session_state.messages.append(gathered)
+            for tool_call in gathered.tool_calls:
+                selected_tool = tool_dict.get(tool_call['name'])
+                if selected_tool:
+                    with st.spinner("도구 실행 중..."):
+                        try:
+                            tool_msg = selected_tool.invoke(tool_call)
+                            st.session_state.messages.append(tool_msg)
+                        except Exception as e:
+                            st.error(f"도구 실행 오류:{e}")
+            # 도구 호출 후 재귀적으로 응답 생성
+            yield from get_ai_response(st.session_state["messages"])
+    except Exception as e:
+        st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
+
 
 
 # @debug_wrap / 에러 확인 함수 요청
