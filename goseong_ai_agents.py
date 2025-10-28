@@ -5,6 +5,7 @@ from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
 from langchain.agents import create_agent
+from langchain.agents.middleware import dynamic_prompt, ModelRequest
 
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
@@ -169,9 +170,8 @@ tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
 # llm_with_tools = llm.bind_tools(tools) # tool 사용 llm 정의
 llm_with_tools = create_agent(
-    model="gpt-4o-mini", tools=tools)
-
-
+    model="gpt-4o-mini", tools=[get_current_time, get_web_search]
+)
 
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
