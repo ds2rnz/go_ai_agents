@@ -175,7 +175,7 @@ llm_with_tools = create_agent(
 
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
-    response = llm_with_tools.invoke(messages)
+    response = llm_with_tools.stream(messages)
     gathered = None
     for chunk in response:
         yield chunk
