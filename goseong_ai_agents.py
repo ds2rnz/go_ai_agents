@@ -1,7 +1,7 @@
 import streamlit as st
 # from langchain_community.chat_models import ChatOpenAI
 from langchain.tools import tool
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
 
@@ -167,63 +167,31 @@ def get_web_search(query: str, search_period: str) -> str:
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
 llm_with_tools = llm.bind_tools(tools) # tool 사용 llm 정의
-
+# llm_with_tools = create_agent(llm, tools)
 
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
     response = llm_with_tools.stream(messages)
     gathered = None
     for chunk in response:
-            if hasattr(chunk, 'content') and chunk.content:
-                yield chunk
-            
-            if gathered is None:
-                gathered = chunk
-            else:
-                gathered += chunk
+        yield chunk
+        if gathered is None:
+            gathered = chunk
+        else:
+            gathered += chunk
 
-        # Tool 호출 처리
     if gathered and getattr(gathered, "tool_calls", None):
-        # AI 메시지 저장
         st.session_state.messages.append(gathered)
-            
-            # 각 Tool 실행
         for tool_call in gathered.tool_calls:
-            tool_name = tool_call.get('name')
-            tool_call_id = tool_call.get('id')
-            
-            st.info(f"🔧 {tool_name} 실행 중...")
-            
-            selected_tool = tool_dict.get(tool_name)
-            
+            selected_tool = tool_dict.get(tool_call['name'])
             if selected_tool:
-                try:
-                    # Tool 실행
-                    tool_result = selected_tool.invoke(tool_call)
-                    
-                    # ToolMessage 생성
-                    tool_message = ToolMessage(
-                        content=str(tool_result),
-                        tool_call_id=tool_call_id,
-                        name=tool_name
-                    )
-                    st.session_state.messages.append(tool_message)
-                    st.success(f"✅ {tool_name} 완료")
-                    
-                except Exception as e:
-                    st.error(f"❌ {tool_name} 오류: {e}")
-                    # 에러 메시지도 ToolMessage로
-                    error_message = ToolMessage(
-                        content=f"오류 발생: {str(e)}",
-                        tool_call_id=tool_call_id,
-                        name=tool_name
-                    )
-                    st.session_state.messages.append(error_message)
-            else:
-                st.warning(f"⚠️ {tool_name} 도구를 찾을 수 없습니다")
-        
-        # Tool 결과 포함해서 다시 호출
-        st.info("🤖 최종 답변 생성 중...")
+                with st.spinner("도구 실행 중..."):
+                    try:
+                        tool_msg = selected_tool.invoke(tool_call)
+                        st.session_state.messages.append(tool_msg)
+                    except Exception as e:
+                        st.error(f"도구 실행 오류:{e}")
+        # 도구 호출 후 재귀적으로 응답 생성
         yield from get_ai_response(st.session_state.messages)
 
 
@@ -781,7 +749,7 @@ for msg in st.session_state.messages:
 if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
     # 사용자 메시지 표시 및 저장
     st.chat_message("user").write(prompt)
-    st.session_state.messages.append(HumanMessage(content=prompt))
+    st.session_state.messages.append(HumanMessage(prompt))
 
     # vectorstore 존재 여부 확인
     vectorstore = st.session_state.get("vectorstore")
@@ -794,19 +762,21 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
-            response = get_ai_response(st.session_state.messages)
-            result = st.chat_message("assistant").write(response)
-            st.session_state.messages.append(AIMessage(content=result))
+            response = get_ai_response(st.session_state["messages"])
+            st.write(type(response))
+            result = st.chat_message("assistant").write_stream(response)
+            st.session_state["messages"].append(AIMessage(result))
         else:
             # 문서 기반 답변
             st.chat_message("assistant").write(answer)
-            st.session_state.messages.append(AIMessage(content=answer))
+            st.session_state.messages.append(AIMessage(answer))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
-        response = get_ai_response(st.session_state.messages)
-        result = st.chat_message("assistant").write(response)
-        st.session_state.messages.append(AIMessage(content=result))
+        response = get_ai_response(st.session_state["messages"])
+        st.write(type(response))        
+        result = st.chat_message("assistant").write_stream(response)
+        st.session_state["messages"].append(AIMessage(result))
 
 
 # 문서 학습 함수 불러오기
