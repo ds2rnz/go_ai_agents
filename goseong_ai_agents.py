@@ -186,8 +186,11 @@ def get_ai_response(messages):
             selected_tool = tool_dict.get(tool_call['name'])
             if selected_tool:
                 with st.spinner("도구 실행 중..."):
-                    tool_msg = selected_tool.invoke(tool_call)
-                    st.session_state.messages.append(tool_msg)
+                    try:
+                        tool_msg = selected_tool.invoke(tool_call)
+                        st.session_state.messages.append(tool_msg)
+                    except Exception as e:
+                        st.error(f"도구 실행 오류:{e}")
         # 도구 호출 후 재귀적으로 응답 생성
         yield from get_ai_response(st.session_state.messages)
 
