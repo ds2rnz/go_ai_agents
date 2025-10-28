@@ -198,6 +198,20 @@ def get_ai_response(messages):
                             st.error(f"도구 실행 오류:{e}")
             # 도구 호출 후 재귀적으로 응답 생성
             yield from get_ai_response(st.session_state["messages"])
+
+
+         # AI의 최종 응답이 있으면 이를 출력
+        if gathered:
+            # gathered가 최종적으로 AI 응답을 포함하고 있으면 이를 출력
+            ai_response = gathered.get('content', '')  # AI 응답의 내용을 가져오기
+
+            if ai_response:
+                # Streamlit에 AI의 응답 출력
+                st.write(f"AI 응답: {ai_response}")
+                # 필요시 UI를 통해 '대화' 형식으로 응답을 추가
+                st.session_state.messages.append({"role": "ai", "content": ai_response})
+
+
     except Exception as e:
         st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
 
