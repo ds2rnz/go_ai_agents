@@ -26,6 +26,7 @@ from langchain_community.vectorstores import FAISS
 from openai import OpenAI
 from langchain_classic.tools.retriever import create_retriever_tool
 
+
 import concurrent.futures
 import traceback
 import inspect
@@ -176,9 +177,10 @@ llm_with_tools = create_agent(
 # @debug_wrap / 에러 확인 함수 요청
 def get_ai_response(messages):
     try:
-        response = llm_with_tools.stream({"messages":messages})
+        # response = llm_with_tools.stream({"messages":messages})
+        response = {"message": messages}
         gathered = None
-        for chunk in response:
+        for chunk in llm_with_tools.stream(response, stream_mode="updates"):
             yield chunk
             if gathered is None:
                 gathered = chunk
