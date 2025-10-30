@@ -1,6 +1,6 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, BaseMessage
 
 from langchain_core.tools import tool
 from datetime import datetime
@@ -27,12 +27,9 @@ from langchain_classic.chains.combine_documents import create_stuff_documents_ch
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-
+from langchain import SystemMessage, HumanMessage, AIMessage, ToolMessage
 
 load_dotenv()
-
-# 환경변수에서 API 키 읽기
-# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
    
 
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
@@ -83,31 +80,22 @@ tool_dict = {
 llm_with_tools = llm.bind_tools(tools)
 
 # 사용자의 메시지 처리하기 위한 함수
-def get_ai_response(messages):
+def get_ai_response(messages: List[SystemMessage|HumanMessage|AIMessage|ToolMessage]):
     try:
-        # 1️⃣ 모델 호출 (스트리밍)
-        response = llm_with_tools.stream(messages)
-        gathered = None
-
-        for chunk in response:
+        response_stream = llm_with_tools.stream(messages)
+        gathered = ""
+        for chunk in response_stream:
             yield chunk
-            if gathered is None:
-                gathered = chunk
-            else:
-                gathered += chunk  # 스트리밍 결과 누적
+            gathered += chunk.content
 
-        # 2️⃣ AI가 도구를 호출한 경우
-        if gathered and getattr(gathered, "tool_calls", None):
-            # assistant 메시지를 세션에 추가
+        # 도구 호출이 포함된 경우
+        # (chunk.tool_calls 형태로 있는지 확인 필요)
+        last = chunk  # 마지막 chunk
+        if getattr(last, "tool_calls", None):
             st.session_state.messages.append(
-                AIMessage(
-                    content=gathered.content,
-                    tool_calls=gathered.tool_calls
-                )
+                AIMessage(content=last.content, additional_kwargs={"tool_calls": last.tool_calls})
             )
-
-            # 3️⃣ 각 도구 호출 실행
-            for tool_call in gathered.tool_calls:
+            for tool_call in last.tool_calls:
                 tool_id = tool_call.get("id") or tool_call.get("tool_call_id")
                 tool_name = tool_call.get("name")
                 tool_args = tool_call.get("args", {})
@@ -120,130 +108,52 @@ def get_ai_response(messages):
                     selected_tool = tool_dict[tool_name]
                     tool_result = selected_tool.invoke(tool_args)
 
-                    # 4️⃣ 도구 실행 결과 메시지 생성 (반드시 tool_call_id 포함)
-                    tool_msg = ToolMessage(
-                        tool_call_id=tool_id,
-                        content=str(tool_result)
-                    )
-
-                    # 도구 응답 메시지를 세션에도, 다음 모델 호출에도 추가
+                    tool_msg = ToolMessage(tool_call_id=tool_id, content=str(tool_result))
                     st.session_state.messages.append(tool_msg)
                     messages.append(tool_msg)
 
-            # 5️⃣ 모든 tool 메시지 추가 후 다시 AI 호출 (재귀)
+            # 재귀 호출
             for chunk in get_ai_response(messages):
                 yield chunk
-
-        # 도구 호출이 없는 일반 응답이면 그대로 끝
         else:
-            st.session_state.messages.append(AIMessage(content=gathered.content))
+            st.session_state.messages.append(AIMessage(content=gathered))
 
     except Exception as e:
         st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
+        st.code(traceback.format_exc(), language="python")
 
 
-    # try:
-
-    #     response = llm_with_tools.stream(messages) 
-    #     gathered = None 
-    #     for chunk in response:
-    #         yield chunk
-            
-    #         if gathered is None: 
-    #             gathered = chunk
-    #         else:
-    #             gathered += chunk
-
-    #     if gathered.tool_calls:
-    #         st.session_state.messages.append(ToolMessage(gathered))
-    #         # st.session_state.messages.append(AIMessage(content=str(answer)))
-            
-    #         for tool_call in gathered.tool_calls:
-    #             with st.spinner("생각중........."):
-    #                 selected_tool = tool_dict[tool_call['name']]
-    #                 tool_msg = selected_tool.invoke(tool_call) 
-    #                 st.session_state.messages.append(tool_msg)        
-            
-    #         for chunk in get_ai_response(st.session_state.messages):
-    #             yield chunk
-                
-    # except Exception as e:
-    #     st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
-
-
-def answer_question(query: str, timeout_sec: int = 30):
-    """LLM 기반 PDF QA """
-
+def answer_question(query: str):
     st.write("🚀 질문 처리 시작")
-    start_time = time.time()
-
     vectorstore = st.session_state.get("vectorstore")
     if vectorstore is None:
         st.warning("⚠️ PDF 학습이 아직 완료되지 않았습니다.")
         return "먼저 PDF 문서를 업로드하고 학습시켜 주세요."
 
     st.write("✅ vectorstore 확인 완료")
-
     try:
-        # 문서에서 유사도 검사
         docs_with_scores = vectorstore.similarity_search_with_score(query, k=3)
-        
-        st.write(f"🔍 문서 검색 횟수: {len(docs_with_scores)}회")
-        
-        # 디버깅: 유사도 점수 표시
         for i, (doc, score) in enumerate(docs_with_scores, 1):
             st.write(f"  문서 {i} 유사도: {score:.4f}")
-        
-        # 유사도 임계값 설정
+
         SIMILARITY_THRESHOLD = 1.1
-        
         relevant_docs = [doc for doc, score in docs_with_scores if score < SIMILARITY_THRESHOLD]
-        
         if not relevant_docs:
-            st.warning(f"⚠️ 질문과 관련된 내용을 찾을 수 없습니다. (최소 유사도: {min(score for _, score in docs_with_scores):.4f})")
-            return "죄송합니다. "
-        
-        st.success(f"✅ {len(relevant_docs)}개의 관련 문서를 찾았습니다!")
+            st.warning("⚠️ 질문과 관련된 내용을 찾을 수 없습니다.")
+            return "죄송합니다. 관련된 정보를 찾지 못했습니다."
 
-        # 검색기 생성
-        retriever = vectorstore.as_retriever(
-            search_type="similarity", search_kwargs={"k":3})
-
-        # QA 체인 생성 (기본 LLM + retriever)
-        # qa_chain = create_retriever_tool(
-        #     retriever=retriever,
-        #     name="document_search",
-        #     description="문서 기반 질의응답을 수행합니다."
-        #     )
-
+        retriever = vectorstore.as_retriever(search_kwargs={"k":3})
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
             retriever=retriever,
-            return_source_documents=False,
+            return_source_documents=False
         )
-
-
-        # 질문에 답변
         result = qa_chain.invoke({"query": query})
-
         if isinstance(result, dict):
-            answer = result.get("result", "답변을 생성할 수 없습니다.")
-            
-            # LLM이 "관련 정보 없음"이라고 답한 경우 감지
-            if "관련 정보를 찾을 수 없습니다" in answer or "관련이 없" in answer:
-                st.info("💡 학습된 문서와 질문이 관련이 없는 것 같습니다.")
-            
-            # 출처 문서 표시 (선택사항)
-            if result.get("source_documents"):
-                with st.expander("📚 참고 문서 보기"):
-                    for i, doc in enumerate(result["source_documents"], 1):
-                        st.text_area(f"문서 {i}", doc.page_content[:300], height=200)
-            
-            return answer
+            return result.get("result", "답변을 생성할 수 없습니다.")
         else:
-            return str(result)  
-
+            return str(result)
     except Exception as e:
         st.error(f"❌ 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
@@ -346,7 +256,6 @@ def process1_f(uploaded_files1):
             status_text.text("✅ 학습자료 저장 완료!")
             
             st.success("🎉 학습이 완료되었습니다!")
-            # st.balloons()
             st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
             return vectorstore
             
@@ -466,7 +375,7 @@ if "vectorstore" not in st.session_state:
 
 # 스트림릿 화면에 메시지 출력
 for msg in st.session_state.messages:
-    if msg:
+    if msg.content:
         if isinstance(msg, SystemMessage):
             st.chat_message("system").write(msg.content)
         elif isinstance(msg, AIMessage):
@@ -497,13 +406,13 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
             response = get_ai_response(st.session_state["messages"])
             result = st.chat_message("assistant").write(response)
             st.write(1)
-            st.session_state["messages"].append(AIMessage(result))
+            st.session_state["messages"](AIMessage(result))
         else:
             # 문서 기반 답변
             st.write(answer)
             st.write(3)
             st.chat_message("assistant").write(answer)
-            st.session_state.messages.append(AIMessage(content=str(answer)))
+            st.session_state.update (AIMessage(content=str(answer)))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
