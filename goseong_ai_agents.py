@@ -20,7 +20,7 @@ import tempfile
 import traceback
 import time
 
-from langchain_classic.retrievers import RetrievalQA
+from langchain_classic.tools.retriever import create_retriever_tool
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import OpenAIEmbeddings
@@ -121,12 +121,11 @@ def answer_question(query: str):
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":3})
 
     # QA 체인 생성 (기본 LLM + retriever)
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
+    qa_chain = create_retriever_tool(
         retriever=retriever,
-        return_source_documents=False,
-    )
+        name="document_search",
+        description="문서 기반 질의응답을 수행합니다."
+        )
 
     # 질문에 답변
     result = qa_chain.invoke(query)
