@@ -391,6 +391,8 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
             st.session_state["messages"].append(AIMessage(result))
         else:
             # 문서 기반 답변
+            st.write(answer)
+            st.write(3)
             st.chat_message("assistant").write(AIMessage(content=answer["result"]))
             st.session_state.messages.append(AIMessage(content=str(answer)))
     else:
