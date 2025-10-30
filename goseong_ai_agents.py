@@ -116,7 +116,8 @@ def get_ai_response(messages: List[SystemMessage|HumanMessage|AIMessage|ToolMess
             for chunk in get_ai_response(messages):
                 yield chunk
         else:
-            st.session_state.messages.append(AIMessage(content=gathered))
+            if gathered and getattr(gathered, "content", None):
+                st.session_state.messages.append(AIMessage(content=gathered.content))
 
     except Exception as e:
         st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
@@ -403,22 +404,24 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
+            st.write([type(m) for m in "messages"])
             response = get_ai_response(st.session_state["messages"])
             result = st.chat_message("assistant").write(response)
             st.write(1)
-            st.session_state["messages"](AIMessage(result))
+            st.session_state["messages"].append(AIMessage(result))
         else:
             # 문서 기반 답변
             st.write(answer)
             st.write(3)
             st.chat_message("assistant").write(answer)
-            st.session_state.update (AIMessage(content=str(answer)))
+            st.session_state.append(AIMessage(content=str(answer)))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
+        st.write([type(m) for m in "messages"])
         response = get_ai_response(st.session_state["messages"])
         result = st.chat_message("assistant").write(response)
-        st.session_state["messages"].append(result)
+        st.session_state["messages"].append(AIMessage(content=str(result)))
 
 
 # 문서 학습 함수 불러오기
