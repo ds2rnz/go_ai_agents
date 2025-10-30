@@ -365,8 +365,8 @@ with st.sidebar:
 # 스트림릿 session_state에 메시지 저장
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        SystemMessage(conten="저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다. "),  
-        AIMessage(conten="무엇을 도와 드릴까요?")
+        SystemMessage(content="저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다. "),  
+        AIMessage(content="무엇을 도와 드릴까요?")
     ]
 
 # 학습 data가 없으면 초기화
