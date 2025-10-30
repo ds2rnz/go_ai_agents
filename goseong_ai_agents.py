@@ -80,10 +80,7 @@ tools = [get_current_time, get_web_search]
 tool_dict = {
     "get_current_time": get_current_time, 
     "get_web_search": get_web_search}
-llm_with_tools = create_agent(
-    model="openai:gpt-4o-mini",
-    tools=tools)
-
+llm_with_tools = llm.bind_tools(tools)
 
 # 사용자의 메시지 처리하기 위한 함수
 def get_ai_response(messages):
