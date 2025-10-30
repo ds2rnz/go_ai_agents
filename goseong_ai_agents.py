@@ -374,7 +374,7 @@ if "vectorstore" not in st.session_state:
     st.session_state["vectorstore"] = None
 
 # 스트림릿 화면에 메시지 출력
-for msg in st.session_state.messages:
+for msg in st.session_state["messages"]:
     if msg.content:
         if isinstance(msg, SystemMessage):
             st.chat_message("system").write(msg.content)
