@@ -85,20 +85,20 @@ llm_with_tools = llm.bind_tools(tools)
 # 사용자의 메시지 처리하기 위한 함수
 def get_ai_response(messages):
     try:
-        # 1️⃣ 모델 스트리밍 호출
+        # 1️⃣ 모델 호출 (스트리밍)
         response = llm_with_tools.stream(messages)
         gathered = None
-        
+
         for chunk in response:
             yield chunk
             if gathered is None:
                 gathered = chunk
             else:
-                gathered += chunk  # 스트리밍된 조각들 합치기
+                gathered += chunk  # 스트리밍 결과 누적
 
-        # 2️⃣ 모델이 도구 호출을 요청한 경우
-        if gathered.tool_calls:
-            # 🟢 'assistant' 메시지를 기록 (도구 호출 요청 메시지)
+        # 2️⃣ AI가 도구를 호출한 경우
+        if gathered and getattr(gathered, "tool_calls", None):
+            # assistant 메시지를 세션에 추가
             st.session_state.messages.append(
                 AIMessage(
                     content=gathered.content,
@@ -106,26 +106,37 @@ def get_ai_response(messages):
                 )
             )
 
-            # 3️⃣ 각 도구 호출 처리
+            # 3️⃣ 각 도구 호출 실행
             for tool_call in gathered.tool_calls:
-                tool_name = tool_call["name"]
-                tool_id = tool_call["id"]
-                tool_args = tool_call["args"] if "args" in tool_call else {}
+                tool_id = tool_call.get("id") or tool_call.get("tool_call_id")
+                tool_name = tool_call.get("name")
+                tool_args = tool_call.get("args", {})
 
-                with st.spinner(f"🛠️ {tool_name} 실행 중..."):
+                if not tool_id or not tool_name:
+                    st.warning(f"⚠️ tool_call 데이터 이상: {tool_call}")
+                    continue
+
+                with st.spinner(f"🧩 도구 실행 중..."):
                     selected_tool = tool_dict[tool_name]
                     tool_result = selected_tool.invoke(tool_args)
 
-                    # 🟢 도구 결과를 ToolMessage 형태로 추가
+                    # 4️⃣ 도구 실행 결과 메시지 생성 (반드시 tool_call_id 포함)
                     tool_msg = ToolMessage(
                         tool_call_id=tool_id,
                         content=str(tool_result)
                     )
-                    st.session_state.messages.append(tool_msg)
 
-            # 4️⃣ 도구 결과를 포함한 전체 메시지로 다시 AI 호출 (재귀)
-            for chunk in get_ai_response(st.session_state.messages):
+                    # 도구 응답 메시지를 세션에도, 다음 모델 호출에도 추가
+                    st.session_state.messages.append(tool_msg)
+                    messages.append(tool_msg)
+
+            # 5️⃣ 모든 tool 메시지 추가 후 다시 AI 호출 (재귀)
+            for chunk in get_ai_response(messages):
                 yield chunk
+
+        # 도구 호출이 없는 일반 응답이면 그대로 끝
+        else:
+            st.session_state.messages.append(AIMessage(content=gathered.content))
 
     except Exception as e:
         st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
