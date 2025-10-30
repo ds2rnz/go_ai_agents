@@ -409,7 +409,7 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
             # 문서 기반 답변
             st.write(answer)
             st.write(3)
-            st.chat_message("assistant").write(AIMessage(content=answer["result"]))
+            st.chat_message("assistant").write(AIMessage(answer))
             st.session_state.messages.append(AIMessage(content=str(answer)))
     else:
         # 일반 AI 모드
