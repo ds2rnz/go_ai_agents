@@ -96,7 +96,7 @@ def get_ai_response(messages):
                 gathered = chunk
             else:
                 gathered += chunk
-    
+
         if gathered.tool_calls:
             st.session_state.messages.append(gathered)
             
@@ -113,49 +113,84 @@ def get_ai_response(messages):
         st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
 
 
-def answer_question(query: str):
-    if "vectorstore" not in st.session_state or st.session_state["vectorstore"] is None:
-        return "먼저 PDF 문서를 업로드하여 학습시켜 주세요."
+def answer_question(query: str, timeout_sec: int = 60):
+    """LLM 기반 PDF QA """
 
-    vectorstore = st.session_state["vectorstore"]
+    st.write("🚀 질문 처리 시작")
+    start_time = time.time()
 
-    # 검색기 생성
-    retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k":3})
+    vectorstore = st.session_state.get("vectorstore")
+    if vectorstore is None:
+        st.warning("⚠️ PDF 학습이 아직 완료되지 않았습니다.")
+        return "먼저 PDF 문서를 업로드하고 학습시켜 주세요."
 
-    # QA 체인 생성 (기본 LLM + retriever)
-    # qa_chain = create_retriever_tool(
-    #     retriever=retriever,
-    #     name="document_search",
-    #     description="문서 기반 질의응답을 수행합니다."
-    #     )
+    st.write("✅ vectorstore 확인 완료")
 
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever,
-        return_source_documents=False,
-    )
-
-
-    # 질문에 답변
-    result = qa_chain.invoke({"query": query})
-
-    if isinstance(result, dict):
-        answer = result.get("result", "답변을 생성할 수 없습니다.")
+    try:
+        # 문서에서 유사도 검사
+        docs_with_scores = vectorstore.similarity_search_with_score(query, k=3)
         
-        # LLM이 "관련 정보 없음"이라고 답한 경우 감지
-        if "관련 정보를 찾을 수 없습니다" in answer or "관련이 없" in answer:
-            st.info("💡 학습된 문서와 질문이 관련이 없는 것 같습니다.")
+        st.write(f"🔍 문서 검색 횟수: {len(docs_with_scores)}회")
         
-        # 출처 문서 표시 (선택사항)
-        if result.get("source_documents"):
-            with st.expander("📚 참고 문서 보기"):
-                for i, doc in enumerate(result["source_documents"], 1):
-                    st.text_area(f"문서 {i}", doc.page_content[:300], height=200)
+        # 디버깅: 유사도 점수 표시
+        for i, (doc, score) in enumerate(docs_with_scores, 1):
+            st.write(f"  문서 {i} 유사도: {score:.4f}")
         
-        return answer
-    else:
-        return str(result)            
+        # 유사도 임계값 설정
+        SIMILARITY_THRESHOLD = 1.1
+        
+        relevant_docs = [doc for doc, score in docs_with_scores if score < SIMILARITY_THRESHOLD]
+        
+        if not relevant_docs:
+            st.warning(f"⚠️ 질문과 관련된 내용을 찾을 수 없습니다. (최소 유사도: {min(score for _, score in docs_with_scores):.4f})")
+            return "죄송합니다. "
+        
+        st.success(f"✅ {len(relevant_docs)}개의 관련 문서를 찾았습니다!")
+
+        # 검색기 생성
+        retriever = vectorstore.as_retriever(
+            search_type="similarity", search_kwargs={"k":3})
+
+        # QA 체인 생성 (기본 LLM + retriever)
+        # qa_chain = create_retriever_tool(
+        #     retriever=retriever,
+        #     name="document_search",
+        #     description="문서 기반 질의응답을 수행합니다."
+        #     )
+
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=retriever,
+            return_source_documents=False,
+        )
+
+
+        # 질문에 답변
+        result = qa_chain.invoke({"query": query})
+
+        if isinstance(result, dict):
+            answer = result.get("result", "답변을 생성할 수 없습니다.")
+            
+            # LLM이 "관련 정보 없음"이라고 답한 경우 감지
+            if "관련 정보를 찾을 수 없습니다" in answer or "관련이 없" in answer:
+                st.info("💡 학습된 문서와 질문이 관련이 없는 것 같습니다.")
+            
+            # 출처 문서 표시 (선택사항)
+            if result.get("source_documents"):
+                with st.expander("📚 참고 문서 보기"):
+                    for i, doc in enumerate(result["source_documents"], 1):
+                        st.text_area(f"문서 {i}", doc.page_content[:300], height=200)
+            
+            return answer
+        else:
+            return str(result)  
+
+    except Exception as e:
+        st.error(f"❌ 오류 발생: {e}")
+        st.code(traceback.format_exc(), language="python")
+        return f"오류가 발생했습니다: {e}"
+                
 
 
 def process1_f(uploaded_files1):
