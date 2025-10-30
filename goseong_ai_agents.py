@@ -6,6 +6,7 @@ from langchain_core.tools import tool
 from datetime import datetime
 import pytz
 
+from langchain.agents import create_agent
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from dotenv import load_dotenv
@@ -79,7 +80,9 @@ tools = [get_current_time, get_web_search]
 tool_dict = {
     "get_current_time": get_current_time, 
     "get_web_search": get_web_search}
-llm_with_tools = llm.bind_tools(tools)
+llm_with_tools = create_agent(
+    model="openai:gpt-4o-mini",
+    tools=tools)
 
 
 # 사용자의 메시지 처리하기 위한 함수
@@ -509,7 +512,7 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
         st.write(response)
-        result = st.chat_message("assistant").write(response)
+        result = st.chat_message("assistant").write_stream(response)
         st.write(2)
         st.session_state["messages"].append(AIMessage(result))
 
