@@ -511,7 +511,7 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
         st.write(response)
         result = st.chat_message("assistant").write(response)
         st.write(2)
-        st.session_state["messages"].append(AIMessage(result))
+        # st.session_state["messages"].append(AIMessage(result))
 
 
 # 문서 학습 함수 불러오기
