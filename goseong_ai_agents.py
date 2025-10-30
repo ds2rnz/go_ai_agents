@@ -341,6 +341,10 @@ if "messages" not in st.session_state:
         AIMessage("무엇을 도와 드릴까요?")
     ]
 
+# 학습 data가 없으면 초기화
+if "vectorstore" not in st.session_state:
+    st.session_state["vectorstore"] = None
+
 # 스트림릿 화면에 메시지 출력
 for msg in st.session_state.messages:
     if msg.content:
@@ -359,20 +363,55 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt) # 사용자 메시지 출력
     st.session_state.messages.append(HumanMessage(prompt)) # 사용자 메시지 저장
 
-    # AI에게 답변 요청하는 부분을 변경
 
-    if "vectorstore" in st.session_state and st.session_state["vectorstore"] is not None:
+        # vectorstore 존재 여부 확인
+    vectorstore = st.session_state.get("vectorstore")
+    
+    if vectorstore is not None:
         # 벡터스토어 기반 답변
-        answer = answer_question(prompt)
-        st.chat_message("assistant").write(answer)
-        st.session_state.messages.append(AIMessage(answer))
+        with st.spinner("📚 학습된 문서를 검색하는 중..."):
+            answer = answer_question(prompt)
+        
+        # 관련 문서가 없는 경우 일반 모드로 전환
+        if answer and "죄송합니다. " in answer and len(answer) < 20:
+            st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
+            response = get_ai_response(st.session_state["messages"])
+            result = st.chat_message("assistant").write_stream(response)
+            st.write(1)
+            st.session_state["messages"].append(AIMessage(result))
+        else:
+            # 문서 기반 답변
+            st.chat_message("assistant").write(answer)
+            st.session_state.messages.append(AIMessage(answer))
     else:
-        # 기존 도구 결합 LLM 답변 (tool-기능 활용)
+        # 일반 AI 모드
+        st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
-        result = st.chat_message("assistant").write_stream(response)  # AI 메시지 출력
-        st.session_state["messages"].append(AIMessage(result)) # AI 메시지 저장  
+        st.write(response)
+        result = st.chat_message("assistant").write_stream(response)
+        st.write(2)
+        st.session_state["messages"].append(AIMessage(result))
 
 
 # 문서 학습 함수 불러오기
 if process1:
     st.session_state["vectorstore"] = process1_f(uploaded_files1)
+
+
+#     # AI에게 답변 요청하는 부분을 변경
+
+#     if "vectorstore" in st.session_state and st.session_state["vectorstore"] is not None:
+#         # 벡터스토어 기반 답변
+#         answer = answer_question(prompt)
+#         st.chat_message("assistant").write(answer)
+#         st.session_state.messages.append(AIMessage(answer))
+#     else:
+#         # 기존 도구 결합 LLM 답변 (tool-기능 활용)
+#         response = get_ai_response(st.session_state["messages"])
+#         result = st.chat_message("assistant").write_stream(response)  # AI 메시지 출력
+#         st.session_state["messages"].append(AIMessage(result)) # AI 메시지 저장  
+
+
+# # 문서 학습 함수 불러오기
+# if process1:
+#     st.session_state["vectorstore"] = process1_f(uploaded_files1)
