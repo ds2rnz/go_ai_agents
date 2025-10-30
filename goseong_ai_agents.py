@@ -138,8 +138,24 @@ def answer_question(query: str):
 
 
     # 질문에 답변
-    result = qa_chain.invoke(query)
-    return result            
+    result = qa_chain.invoke({"query": query})
+
+    if isinstance(result, dict):
+        answer = result.get("result", "답변을 생성할 수 없습니다.")
+        
+        # LLM이 "관련 정보 없음"이라고 답한 경우 감지
+        if "관련 정보를 찾을 수 없습니다" in answer or "관련이 없" in answer:
+            st.info("💡 학습된 문서와 질문이 관련이 없는 것 같습니다.")
+        
+        # 출처 문서 표시 (선택사항)
+        if result.get("source_documents"):
+            with st.expander("📚 참고 문서 보기"):
+                for i, doc in enumerate(result["source_documents"], 1):
+                    st.text_area(f"문서 {i}", doc.page_content[:300], height=200)
+        
+        return answer
+    else:
+        return str(result)            
 
 
 def process1_f(uploaded_files1):
