@@ -84,36 +84,83 @@ llm_with_tools = llm.bind_tools(tools)
 
 # 사용자의 메시지 처리하기 위한 함수
 def get_ai_response(messages):
-
     try:
-
-        response = llm_with_tools.stream(messages) 
-        gathered = None 
+        # 1️⃣ 모델 스트리밍 호출
+        response = llm_with_tools.stream(messages)
+        gathered = None
+        
         for chunk in response:
             yield chunk
-            
-            if gathered is None: 
+            if gathered is None:
                 gathered = chunk
             else:
-                gathered += chunk
+                gathered += chunk  # 스트리밍된 조각들 합치기
 
+        # 2️⃣ 모델이 도구 호출을 요청한 경우
         if gathered.tool_calls:
-            st.session_state.messages.append(gathered)
-            
+            # 🟢 'assistant' 메시지를 기록 (도구 호출 요청 메시지)
+            st.session_state.messages.append(
+                AIMessage(
+                    content=gathered.content,
+                    tool_calls=gathered.tool_calls
+                )
+            )
+
+            # 3️⃣ 각 도구 호출 처리
             for tool_call in gathered.tool_calls:
-                with st.spinner("생각중........."):
-                    selected_tool = tool_dict[tool_call['name']]
-                    tool_msg = selected_tool.invoke(tool_call) 
-                    st.session_state.messages.append(tool_msg)        
-            
+                tool_name = tool_call["name"]
+                tool_id = tool_call["id"]
+                tool_args = tool_call["args"] if "args" in tool_call else {}
+
+                with st.spinner(f"🛠️ {tool_name} 실행 중..."):
+                    selected_tool = tool_dict[tool_name]
+                    tool_result = selected_tool.invoke(tool_args)
+
+                    # 🟢 도구 결과를 ToolMessage 형태로 추가
+                    tool_msg = ToolMessage(
+                        tool_call_id=tool_id,
+                        content=str(tool_result)
+                    )
+                    st.session_state.messages.append(tool_msg)
+
+            # 4️⃣ 도구 결과를 포함한 전체 메시지로 다시 AI 호출 (재귀)
             for chunk in get_ai_response(st.session_state.messages):
                 yield chunk
-                
+
     except Exception as e:
         st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
 
 
-def answer_question(query: str, timeout_sec: int = 60):
+    # try:
+
+    #     response = llm_with_tools.stream(messages) 
+    #     gathered = None 
+    #     for chunk in response:
+    #         yield chunk
+            
+    #         if gathered is None: 
+    #             gathered = chunk
+    #         else:
+    #             gathered += chunk
+
+    #     if gathered.tool_calls:
+    #         st.session_state.messages.append(ToolMessage(gathered))
+    #         # st.session_state.messages.append(AIMessage(content=str(answer)))
+            
+    #         for tool_call in gathered.tool_calls:
+    #             with st.spinner("생각중........."):
+    #                 selected_tool = tool_dict[tool_call['name']]
+    #                 tool_msg = selected_tool.invoke(tool_call) 
+    #                 st.session_state.messages.append(tool_msg)        
+            
+    #         for chunk in get_ai_response(st.session_state.messages):
+    #             yield chunk
+                
+    # except Exception as e:
+    #     st.error(f"❌ invoke() 호출 중 오류 발생: {e}")
+
+
+def answer_question(query: str, timeout_sec: int = 30):
     """LLM 기반 PDF QA """
 
     st.write("🚀 질문 처리 시작")
@@ -461,20 +508,3 @@ if process1:
     st.session_state["vectorstore"] = process1_f(uploaded_files1)
 
 
-#     # AI에게 답변 요청하는 부분을 변경
-
-#     if "vectorstore" in st.session_state and st.session_state["vectorstore"] is not None:
-#         # 벡터스토어 기반 답변
-#         answer = answer_question(prompt)
-#         st.chat_message("assistant").write(answer)
-#         st.session_state.messages.append(AIMessage(answer))
-#     else:
-#         # 기존 도구 결합 LLM 답변 (tool-기능 활용)
-#         response = get_ai_response(st.session_state["messages"])
-#         result = st.chat_message("assistant").write_stream(response)  # AI 메시지 출력
-#         st.session_state["messages"].append(AIMessage(result)) # AI 메시지 저장  
-
-
-# # 문서 학습 함수 불러오기
-# if process1:
-#     st.session_state["vectorstore"] = process1_f(uploaded_files1)
