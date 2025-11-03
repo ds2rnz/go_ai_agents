@@ -133,7 +133,7 @@ elif isinstance(response, list):
     if ai_messages:
         ai_reply = ai_messages[-1].get("content")
 
-st.chat_message("assistant").write(ai_reply)
+st.chat_message("assistant").write(st.session_state["ai_reply"])
 
 # AI 응답 출력
 # st.chat_message("assistant").write(f"message:{ai_reply['messages'][-1].content}")
