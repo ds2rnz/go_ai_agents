@@ -69,6 +69,7 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
             # event는 {"messages": [...]} 형태로 옴
             if "messages" in event:
                 msg = event["messages"][-1]
+                st.write(msg)
                 if isinstance(msg, AIMessage):
                     streamed_text += msg.content
                     stream_area.markdown(streamed_text + "▌")
