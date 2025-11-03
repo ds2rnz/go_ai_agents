@@ -65,7 +65,7 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
         streamed_text = ""
 
         # 메시지 기반으로 agent 호출
-        for event in agent.stream({"messages": st.session_state["messages"]}):
+        for event in llm.stream({"messages": st.session_state["messages"]}):
             # event는 {"messages": [...]} 형태로 옴
             if "messages" in event:
                 msg = event["messages"][-1]
