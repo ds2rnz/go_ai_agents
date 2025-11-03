@@ -112,21 +112,32 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
  #           st.write(type(response))
 #
     # 응답 내용 추출
-    if isinstance(response, dict) and "messages" in response:
-        msg = response["messages"][-1]
-        st.write(msg)
-        content = msg.content if hasattr(msg, "content") else str(msg)
-        st.write(content)
-    else:
-        content = str(response)
 
-    st.chat_message("assistant").write(msg[AIMessage.content][-1])
+if isinstance(response, dict) and "messages" in response:
+    # AI 타입 메시지만 추출
+    ai_messages = [
+        msg for msg in response["messages"]
+        if msg.get("type") == "ai"
+    ]
+    if ai_messages:
+        ai_reply = ai_messages[-1].get("content")  # 마지막 AI 답변
+
+elif isinstance(response, list):
+    # response 자체가 리스트인 경우
+    ai_messages = [
+        msg for msg in response
+        if isinstance(msg, dict) and msg.get("type") == "ai"
+    ]
+    if ai_messages:
+        ai_reply = ai_messages[-1].get("content")
+
+st.chat_message("assistant").write(ai_reply)
 
     # AI 응답 출력
     # st.chat_message("assistant").write(f"message:{ai_reply['messages'][-1].content}")
     # st.session_state["messages"].append(AIMessage(content=ai_reply))
     #st.chat_message("assistant").write(response['messages'][-1].content)
-    st.session_state["messages"].append(AIMessage(content))
+st.session_state["messages"].append(AIMessage(ai_reply))
     #(f"Response: {result1['messages'][-1].content}")
 
 
