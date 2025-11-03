@@ -431,7 +431,28 @@ for msg in st.session_state["messages"]:
 # 사용자 입력 처리
 if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt) # 사용자 메시지 출력
-    st.session_state.messages.append(HumanMessage(prompt)) # 사용자 메시지 저장
+    st.session_state.messages.append(HumanMessage(content=prompt)) # 사용자 메시지 저장
+
+# user_input = st.chat_input("메시지를 입력하세요...")
+# if user_input:
+#     st.session_state.messages.append(HumanMessage(content=user_input))
+#     with st.chat_message("user"):
+#         st.markdown(user_input)
+
+#     with st.chat_message("assistant"):
+#         message_placeholder = st.empty()
+#         try:
+#             # LangChain 1.0 방식으로 invoke 실행
+#             response = agent.invoke({
+#                     "messages": [HumanMessage(content=user_input)]
+#                      })
+#             ai_reply = response.get("output", "(응답 없음)")
+#             st.session_state.messages.append(AIMessage(content=ai_reply))
+#             message_placeholder.markdown(ai_reply)
+
+#         except Exception as e:
+#             st.error("❌ 오류 발생:")
+#             st.code(traceback.format_exc(), language="python")
 
 
         # vectorstore 존재 여부 확인
@@ -445,9 +466,9 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
-            st.write([type(m) for m in "messages"])
+            # st.write([type(m) for m in "messages"])
             response = get_ai_response(st.session_state["messages"])
-            result = st.chat_message("assistant").write(response)
+            result = st.chat_message("assistant").write(content=response)
             st.write(1)
             st.session_state["messages"].append(AIMessage(result))
         else:
