@@ -92,7 +92,7 @@ if user_input:
         message_placeholder = st.empty()
         try:
             # LangChain 1.0 방식으로 invoke 실행
-            response = agent.invokee({
+            response = agent.invoke({
                     "messages": [HumanMessage(content=user_input)]
                      })
             ai_reply = response.get("output", "(응답 없음)")
