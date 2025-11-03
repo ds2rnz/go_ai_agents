@@ -431,13 +431,14 @@ for msg in st.session_state["messages"]:
 # 사용자 입력 처리
 if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt) # 사용자 메시지 출력
-    st.session_state["messages"].append(HumanMessage(prompt)) # 사용자 메시지 저장
+    st.session_state["messages"].append(HumanMessage(content=prompt)) # 사용자 메시지 저장
 
 response = agent.invoke({
     "messages": [HumanMessage(content=prompt)]
 })
-st.session_state["messages"].append(AIMessage(content=response))
-st.chat_message("assistant").write_stream(response)
+
+st.session_state["messages"].append(AIMessage(content=str(response)))
+st.chat_message("assistant").write(content=str(response))
 
 # user_input = st.chat_input("메시지를 입력하세요...")
 # if user_input:
