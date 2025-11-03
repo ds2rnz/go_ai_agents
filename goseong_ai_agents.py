@@ -59,7 +59,7 @@ llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4, api_key=api_key)
 agent = create_agent(
     model=llm,
     tools=[get_current_time, get_web_search],
-    middleware=LLMToolSelectorMiddleware(max_tools=2)
+    middleware=[LLMToolSelectorMiddleware(max_tools=2)]
     )
 
 # -------------------------------
