@@ -23,24 +23,24 @@ api_key = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 # # -------------------------------
 # # 1️⃣ 도구 정의
 # # -------------------------------
-@tool
-def get_current_time(timezone: str, location: str) -> str:
-    """현재 시간을 지정된 타임존과 위치에 맞게 반환합니다."""
-    import pytz
-    from datetime import datetime
-    try:
-        tz = pytz.timezone(timezone)
-        now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-        return f'{timezone} ({location}) 현재시각 {now}'
-    except pytz.UnknownTimeZoneError:
-        return f"알 수 없는 타임존: {timezone}"
+# @tool
+# def get_current_time(timezone: str, location: str) -> str:
+#     """현재 시간을 지정된 타임존과 위치에 맞게 반환합니다."""
+#     import pytz
+#     from datetime import datetime
+#     try:
+#         tz = pytz.timezone(timezone)
+#         now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
+#         return f'{timezone} ({location}) 현재시각 {now}'
+#     except pytz.UnknownTimeZoneError:
+#         return f"알 수 없는 타임존: {timezone}"
 
-@tool
-def get_web_search(query: str, search_period: str) -> str:
-    """DuckDuckGo API를 이용해 지정된 기간 내의 뉴스를 검색하여 결과를 반환합니다."""
-    wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
-    search = DuckDuckGoSearchResults(api_wrapper=wrapper, source="news", results_separator=';\n')
-    return search.invoke(query)
+# @tool
+# def get_web_search(query: str, search_period: str) -> str:
+#     """DuckDuckGo API를 이용해 지정된 기간 내의 뉴스를 검색하여 결과를 반환합니다."""
+#     wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
+#     search = DuckDuckGoSearchResults(api_wrapper=wrapper, source="news", results_separator=';\n')
+#     return search.invoke(query)
 
 # def get_current_time(query: str = "") -> str:
 #     """현재 시간을 반환하는 도구"""
@@ -52,7 +52,7 @@ def get_web_search(query: str, search_period: str) -> str:
 #     return f"'{query}'에 대한 웹 검색 결과를 찾을 수 없습니다."
 
 # LangChain의 Tool 객체로 등록
-tools = [get_current_time, get_web_search]
+#tools = [get_current_time, get_web_search]
 
 # -------------------------------
 # 2️⃣ LLM 초기화
@@ -67,8 +67,8 @@ llm = ChatOpenAI(
 # -------------------------------
 agent = create_agent(
     model=llm,
-    tools=tools,
-    middleware=[LLMToolSelectorMiddleware(max_tools=2)],
+#    tools=tools,
+#    middleware=[LLMToolSelectorMiddleware(max_tools=2)],
 )
 
 # -------------------------------
