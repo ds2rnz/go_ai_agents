@@ -438,7 +438,7 @@ response = agent.invoke({
 })
 
 st.session_state["messages"].append(AIMessage(content=str(response)))
-st.chat_message("assistant").write(content=str(response))
+st.chat_message("assistant").markdown(content=response)
 
 # user_input = st.chat_input("메시지를 입력하세요...")
 # if user_input:
