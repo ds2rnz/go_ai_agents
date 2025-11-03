@@ -102,20 +102,24 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
     st.session_state["messages"].append(HumanMessage(content=prompt))
 
     # Agent 호출
-    response = agent.invoke({
-        "messages": [HumanMessage(content=prompt)]
-    })
+    # response = agent.invoke({
+    #     "messages": [HumanMessage(content=prompt)]
+    # })
+    for chunk in agent.stream({"messages": prompt}, stream_mode="values"):
+        if "messages" in chunk and chunk["messages"]:
+            response = chunk["messages"][-1]
 
     # 응답 내용 추출
-    if isinstance(response, dict) and "output" in response:
-        ai_reply = response["output"]
-    else:
-        ai_reply = str(response)
+    # if isinstance(response, dict) and "output" in response:
+    #     ai_reply = response["output"]
+    # else:
+    #     ai_reply = str(response)
 
     # AI 응답 출력
-    st.chat_message("assistant").write(f"message:{ai_reply['messages'][-1].content}")
-    st.session_state["messages"].append(AIMessage(content=ai_reply))
-
+    # st.chat_message("assistant").write(f"message:{ai_reply['messages'][-1].content}")
+    # st.session_state["messages"].append(AIMessage(content=ai_reply))
+    st.chat_message("assistant").write(response)
+    st.session_state["messages"].append(AIMessage(response))
     #(f"Response: {result1['messages'][-1].content}")
 
 
