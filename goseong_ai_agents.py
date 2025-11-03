@@ -74,7 +74,7 @@ agent = create_agent(
 
 def get_ai_response(messages):
     try:
-        # response = llm_with_tools.stream({"messages":messages})
+        response = agent.stream({"messages":messages})
         response = {"message": messages}
         gathered = None
         for chunk in agent.stream(response, stream_mode="updates"):
