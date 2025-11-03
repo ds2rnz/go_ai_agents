@@ -20,7 +20,7 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import LLMToolSelectorMiddleware
 import pytz
 from langchain_classic.tools.retriever import create_retriever_tool
-from langchain_core.vectorstores.base import similarity_search_with_score
+from langchain_core.vectorstores.base import VectorStore
 import traceback
 import inspect
 import time
@@ -130,7 +130,7 @@ def answer_question(query: str, timeout_sec: int = 60):
 
     try:
         # 문서에서 유사도 검사
-        docs_with_scores = vectorstore.similarity_search_with_relevance_scores(query, k=3)
+        docs_with_scores = vectorstore.similarity_search_with_score(query, k=3)
         
         st.write(f"🔍 문서 검색 횟수: {len(docs_with_scores)}회")
         
