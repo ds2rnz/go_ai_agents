@@ -108,6 +108,7 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
     for chunk in agent.stream({"messages": prompt}, stream_mode="values"):
         if "messages" in chunk and chunk["messages"]:
             response = chunk["messages"][-1]
+            st.write(response)
 
     # 응답 내용 추출
     if isinstance(response, dict) and "messages" in response:
