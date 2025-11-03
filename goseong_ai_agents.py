@@ -470,7 +470,7 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
             response = get_ai_response(st.session_state["messages"])
             result = st.chat_message("assistant").write(content=response)
             st.write(1)
-            st.session_state["messages"].append(AIMessage(result))
+            st.session_state["messages"].append(AIMessage(content=str(result)))
         else:
             # 문서 기반 답변
             st.write(answer)
