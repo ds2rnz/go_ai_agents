@@ -15,7 +15,8 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_core.tools import tool
-from langchain.agents import create_openai_functions_agent, AgentExecutor
+from langchain.agents import create_agent
+from langchain.agents.middleware import LLMToolSelectorMiddleware
 
 # .env에서 OPENAI_API_KEY 불러오기
 load_dotenv()
@@ -55,11 +56,14 @@ tools = [get_current_time, get_web_search]
 # -------------------------------
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4, api_key=api_key)
 
-agent = create_openai_functions_agent(llm, tools)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent = create_agent(
+    model=llm,
+    tools=[get_current_time, get_web_search],
+    middleware=LLMToolSelectorMiddleware(max_tools=2)
+    )
 
 # -------------------------------
-# 3️⃣ Streamlit 세션 초기화
+# 3️⃣ Streamlit 세션 초기화m
 # -------------------------------
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
@@ -88,7 +92,7 @@ if user_input:
         message_placeholder = st.empty()
         try:
             # LangChain 1.0 방식으로 invoke 실행
-            response = agent_executor.invoke({"input": user_input})
+            response = agent.invoke({"input": user_input})
             ai_reply = response.get("output", "(응답 없음)")
             st.session_state.messages.append(AIMessage(content=ai_reply))
             message_placeholder.markdown(ai_reply)
