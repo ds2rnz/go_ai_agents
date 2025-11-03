@@ -105,9 +105,9 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
     # response = agent.invoke({
     #     "messages": [HumanMessage(content=prompt)]
     # })
-    for chunk in agent.stream({"messages": prompt}, stream_mode="values"):
+    for chunk in agent.stream({"messages": prompt}):
         if "messages" in chunk and chunk["messages"]:
-            response = chunk["messages"][-1]
+            response = chunk["messages"][1]
             st.write(response)
  #           st.write(type(response))
 #
