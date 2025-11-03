@@ -110,16 +110,19 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
             response = chunk["messages"][-1]
 
     # 응답 내용 추출
-    # if isinstance(response, dict) and "output" in response:
-    #     ai_reply = response["output"]
-    # else:
-    #     ai_reply = str(response)
+    if isinstance(response, dict) and "messages" in response:
+        msg = response["messages"][-1]
+        content = msg.content if hasattr(msg, "content") else str(msg)
+    else:
+        content = str(response)
+
+    st.chat_message("assistant").write(f"message: {content}")
 
     # AI 응답 출력
     # st.chat_message("assistant").write(f"message:{ai_reply['messages'][-1].content}")
     # st.session_state["messages"].append(AIMessage(content=ai_reply))
-    st.chat_message("assistant").write(f"message:{response['messages'][-1].content}")
-    st.session_state["messages"].append(AIMessage(response))
+    #st.chat_message("assistant").write(response['messages'][-1].content)
+    st.session_state["messages"].append(AIMessage(content))
     #(f"Response: {result1['messages'][-1].content}")
 
 
