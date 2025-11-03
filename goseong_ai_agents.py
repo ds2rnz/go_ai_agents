@@ -468,7 +468,7 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
             # st.write([type(m) for m in "messages"])
             response = get_ai_response(st.session_state["messages"])
-            result = st.chat_message("assistant").write(content=response)
+            result = st.chat_message("assistant").markdown(response)
             st.write(1)
             st.session_state["messages"].append(AIMessage(content=str(result)))
         else:
