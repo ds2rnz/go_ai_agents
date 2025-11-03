@@ -110,6 +110,8 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
             response = chunk["messages"][-1]
             st.write(response)
  #           st.write(type(response))
+        else:
+            response = chunk
 #
     # 응답 내용 추출
 
