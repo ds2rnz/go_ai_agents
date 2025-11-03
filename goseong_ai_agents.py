@@ -433,7 +433,9 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt) # 사용자 메시지 출력
     st.session_state["messages"].append(HumanMessage(prompt)) # 사용자 메시지 저장
 
-response = agent.invoke(prompt)
+response = agent.invoke({
+    "messages": [HumanMessage(content=prompt)]
+})
 st.session_state["messages"].append(AIMessage(content=response))
 st.chat_message("assistant").write_stream(response)
 
