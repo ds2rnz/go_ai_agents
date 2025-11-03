@@ -472,74 +472,58 @@ if process1:
 
 
 
+# '''
+# # -------------------------------
+# # 3️⃣ Streamlit 세션 초기화m
+# # -------------------------------
+# # if "messages" not in st.session_state:
+# #     st.session_state["messages"] = [
+# #         SystemMessage("저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다. "),  
+# #         AIMessage("무엇을 도와 드릴까요?")
+# #     ]
+
+# # -------------------------------
+# # 4️⃣ 메시지 UI 표시
+# # -------------------------------
+# # for msg in st.session_state.messages:
+# #     role = "user" if isinstance(msg, HumanMessage) else "assistant"
+# #     with st.chat_message(role):
+# #         st.markdown(msg.content)
+
+# # -------------------------------
+# # 5️⃣ 사용자 입력 및 응답 처리
+# # -------------------------------
+# user_input = st.chat_input("메시지를 입력하세요...")
+# if user_input:
+#     st.session_state.messages.append(HumanMessage(content=user_input))
+#     with st.chat_message("user"):
+#         st.markdown(user_input)
+
+#     with st.chat_message("assistant"):
+#         message_placeholder = st.empty()
+#         try:
+#             # LangChain 1.0 방식으로 invoke 실행
+#             response = agent.invoke({
+#                     "messages": [HumanMessage(content=user_input)]
+#                      })
+#             ai_reply = response.get("output", "(응답 없음)")
+#             st.session_state.messages.append(AIMessage(content=ai_reply))
+#             message_placeholder.markdown(ai_reply)
+
+#         except Exception as e:
+#             st.error("❌ 오류 발생:")
+#             st.code(traceback.format_exc(), language="python")
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-# -------------------------------
-# 3️⃣ Streamlit 세션 초기화m
-# -------------------------------
-# if "messages" not in st.session_state:
-#     st.session_state["messages"] = [
-#         SystemMessage("저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다. "),  
-#         AIMessage("무엇을 도와 드릴까요?")
-#     ]
-
-# -------------------------------
-# 4️⃣ 메시지 UI 표시
-# -------------------------------
-# for msg in st.session_state.messages:
-#     role = "user" if isinstance(msg, HumanMessage) else "assistant"
-#     with st.chat_message(role):
-#         st.markdown(msg.content)
-
-# -------------------------------
-# 5️⃣ 사용자 입력 및 응답 처리
-# -------------------------------
-user_input = st.chat_input("메시지를 입력하세요...")
-if user_input:
-    st.session_state.messages.append(HumanMessage(content=user_input))
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        try:
-            # LangChain 1.0 방식으로 invoke 실행
-            response = agent.invoke({
-                    "messages": [HumanMessage(content=user_input)]
-                     })
-            ai_reply = response.get("output", "(응답 없음)")
-            st.session_state.messages.append(AIMessage(content=ai_reply))
-            message_placeholder.markdown(ai_reply)
-
-        except Exception as e:
-            st.error("❌ 오류 발생:")
-            st.code(traceback.format_exc(), language="python")
-
-
-
-
-#             for chunk in agent.stream({
-#     "messages": [{"role": "user", "content": "Search for AI news and summarize the findings"}]
-# }, stream_mode="values"):
-#     # Each chunk contains the full state at that point
-#     latest_message = chunk["messages"][-1]
-#     if latest_message.content:
-#         print(f"Agent: {latest_message.content}")
-#     elif latest_message.tool_calls:
-#         print(f"Calling tools: {[tc['name'] for tc in latest_message.tool_calls]}")
-'''
+# #             for chunk in agent.stream({
+# #     "messages": [{"role": "user", "content": "Search for AI news and summarize the findings"}]
+# # }, stream_mode="values"):
+# #     # Each chunk contains the full state at that point
+# #     latest_message = chunk["messages"][-1]
+# #     if latest_message.content:
+# #         print(f"Agent: {latest_message.content}")
+# #     elif latest_message.tool_calls:
+# #         print(f"Calling tools: {[tc['name'] for tc in latest_message.tool_calls]}")
+# '''
