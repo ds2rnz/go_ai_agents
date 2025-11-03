@@ -118,7 +118,7 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
     else:
         content = str(response)
 
-    st.chat_message(msg["ai"]).write(msg[AIMessage.content][-1])
+    st.chat_message(msg["assistant"]).write(msg[AIMessage.content][-1])
 
     # AI 응답 출력
     # st.chat_message("assistant").write(f"message:{ai_reply['messages'][-1].content}")
