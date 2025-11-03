@@ -434,7 +434,7 @@ if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
     st.session_state["messages"].append(HumanMessage(prompt)) # 사용자 메시지 저장
 
 response = agent.stream(prompt)
-st.session_state["message"].append(AIMessage(response))
+st.session_state["messages"].append(AIMessage(response))
 st.chat_message("assistant").write_stream(response)
 
 # user_input = st.chat_input("메시지를 입력하세요...")
