@@ -93,12 +93,12 @@ def get_ai_response(messages, thread_id: str = "default"):
         stream_mode="values"
     ):
         yield chunk["messages"][-1].content
-        st.write("1:", chunk)
+        st.write(f"1: {chunk}")
         if gathered is None:
             gathered = chunk
         else:
             gathered += chunk
-    st.write("2:", chunk)
+    st.write(f"2: {chunk}")
     if gathered and getattr(gathered, "tool_calls", None):
         st.session_state["messages"].append(gathered)
         for tool_call in gathered.tool_calls:
@@ -106,7 +106,7 @@ def get_ai_response(messages, thread_id: str = "default"):
             if selected_tool:
                 with st.spinner("도구 실행 중..."):
                     tool_msg = selected_tool.invoke(tool_call)
-                    st.write("3:", tool_msg)
+                    st.write(f"tool_msg:{tool_msg}")
                     st.session_state["messages"].append(tool_msg)
         # 도구 호출 후 재귀적으로 응답 생성
         yield from get_ai_response(st.session_state["messages"])
@@ -558,6 +558,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
+        st.write(f"response: {response}")
         result = st.chat_message("assistant").write_stream(response)
         st.session_state["messages"].append(AIMessage(result))
 
