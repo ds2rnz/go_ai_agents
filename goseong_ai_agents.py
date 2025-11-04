@@ -163,7 +163,6 @@ def answer_question(query: str, timeout_sec: int = 60):
             name="document_search",
             description="문서 기반 질의응답을 수행합니다."
             )
-        st.wri
         st.write("✅ qa_chain 생성 완료")
 
         # 질문 실행
