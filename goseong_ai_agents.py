@@ -93,7 +93,7 @@ llm_with_tools = llm.bind_tools(tools)
 
 @debug_wrap
 def get_ai_response(messages):
-    response = llm_with_tools.stream(messages)
+    response = llm_with_tools.invoke(messages)
     gathered = None
     for chunk in response:
         yield chunk
