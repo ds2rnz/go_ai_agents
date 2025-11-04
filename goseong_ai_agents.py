@@ -90,7 +90,8 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
         # agent.stream()을 사용하여 실시간 출력
         for event in agent.stream(inputs, stream_mode="updates"):
             st.write(event.items())
-            event_text = str(event.items(AIMessage.content))
+            event_text = event.items(AIMessage)
+            st.write(event_text)
             # event_text1 = {event_text['messages'][-1].content_blocks}
             st.write(event_text)
             st.write("\n")
