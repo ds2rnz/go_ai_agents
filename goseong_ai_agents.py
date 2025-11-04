@@ -98,7 +98,7 @@ def get_ai_response(messages, thread_id: str = "default"):
             gathered = chunk
         else:
             gathered += chunk
-
+    st.write("2:", chunk)
     if gathered and getattr(gathered, "tool_calls", None):
         st.session_state["messages"].append(gathered)
         for tool_call in gathered.tool_calls:
@@ -106,7 +106,7 @@ def get_ai_response(messages, thread_id: str = "default"):
             if selected_tool:
                 with st.spinner("도구 실행 중..."):
                     tool_msg = selected_tool.invoke(tool_call)
-                    st.write("2:", tool_msg)
+                    st.write("3:", tool_msg)
                     st.session_state["messages"].append(tool_msg)
         # 도구 호출 후 재귀적으로 응답 생성
         yield from get_ai_response(st.session_state["messages"])
