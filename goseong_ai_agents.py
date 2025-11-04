@@ -91,7 +91,7 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
         for event in agent.stream(inputs, stream_mode="updates"):
             st.write(event.items())
             event_text = event.items()
-            event_text1 = {event_text["messages"][-1].content_blocks}
+            event_text1 = {event_text['messages'][-1].content_blocks}
             st.write(event_text1)
             st.write("\n")
         #     if event_text.content:
