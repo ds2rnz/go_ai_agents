@@ -81,21 +81,37 @@ if prompt := st.chat_input("무엇이든 물어보세요!"):
     # 사용자 메시지 저장 및 표시
     st.chat_message("user").write(prompt)
     st.session_state["messages"].append(HumanMessage(content=prompt))
-
+    inputs = {"messages": [{"role": "user", "content": prompt}]}
     # 스트리밍 응답 처리
     with st.chat_message("assistant"):
         stream_area = st.empty()
         streamed_text = ""
 
         # agent.stream()을 사용하여 실시간 출력
-        for event in agent.stream({"messages": prompt}):
-            if "messages" in event:
-                msg = event["messages"][-1]
-                if isinstance(msg, AIMessage):
-                    streamed_text += msg.content
-                    stream_area.markdown(streamed_text + "▌")
+        for stream_mode, event in agent.stream(inputs, stream_mode="values"):
+            event_text = event["messages"][-1]
+            st.write(f"stream_mode: {stream_mode}")
+            print(f"content: {event}")
+            print("\n")
+        #     if event_text.content:
+        #         msg = event["messages"][-1]
+        #         if isinstance(msg, AIMessage):
+        #             streamed_text += msg.content
+        #             stream_area.markdown(streamed_text + "▌")
 
-        # 최종 답변 출력
-        stream_area.markdown(streamed_text)
-        st.session_state["messages"].append(AIMessage(content=streamed_text))
+        # # 최종 답변 출력
+        # stream_area.markdown(streamed_text)
+        # st.session_state["messages"].append(AIMessage(content=streamed_text))
 
+# graph = create_agent(
+#     model=llm,
+#     tools=[check_weather],
+#     system_prompt="You are a helpful assistant",
+# )
+# inputs = {"messages": [{"role": "user", "content": "what is the weather in sf"}]}
+# for chunk in graph.stream(inputs, stream_mode="values"):
+#     latest_message = chunk["messages"][-1]
+#     if latest_message.content:
+#         print(f"Agent: {latest_message.content}")
+#     elif latest_message.tool_calls:
+#         print(f"Calling tools: {[tc['name'] for tc in latest_message.tool_calls]}")
