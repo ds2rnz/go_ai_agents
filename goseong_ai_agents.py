@@ -103,15 +103,15 @@ def get_ai_response(messages):
             gathered += chunk
 
     if gathered and getattr(gathered, "tool_calls", None):
-        st.session_state.messages.append(gathered)
+        st.session_state["messages"].append(gathered)
         for tool_call in gathered.tool_calls:
             selected_tool = tool_dict.get(tool_call['name'])
             if selected_tool:
                 with st.spinner("도구 실행 중..."):
                     tool_msg = selected_tool.invoke(tool_call)
-                    st.session_state.messages.append(tool_msg)
+                    st.session_state["messages"].append(tool_msg)
         # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(st.session_state.messages)
+        yield from get_ai_response(st.session_state["messages"])
 
 
 @debug_wrap
@@ -518,7 +518,7 @@ if "vectorstore" not in st.session_state:
     st.session_state["vectorstore"] = None
 
 # 스트림릿 화면에 메시지 출력
-for msg in st.session_state.messages:
+for msg in st.session_state["messages"]:
     if msg.content:
         if isinstance(msg, SystemMessage):
             st.chat_message("system").write(msg.content)
@@ -534,7 +534,7 @@ for msg in st.session_state.messages:
 if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
     # 사용자 메시지 표시 및 저장
     st.chat_message("user").write(prompt)
-    st.session_state.messages.append(HumanMessage(prompt))
+    st.session_state["messages"].append(HumanMessage(prompt))
 
     # vectorstore 존재 여부 확인
     vectorstore = st.session_state.get("vectorstore")
@@ -553,7 +553,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         else:
             # 문서 기반 답변
             st.chat_message("assistant").write(answer)
-            st.session_state.messages.append(AIMessage(answer))
+            st.session_state["messages"].append(AIMessage(answer))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
