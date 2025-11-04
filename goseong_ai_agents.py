@@ -4,6 +4,7 @@ from langchain.tools import tool
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
+from langchain.agents import create_agent
 
 
 import pytz
@@ -88,30 +89,36 @@ def get_web_search(query: str, search_period: str) -> str:
 
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
-llm_with_tools = llm.bind_tools(tools)
+llm_with_tools = create_agent(
+    model=llm,
+    tools=tools)
 
 
 @debug_wrap
 def get_ai_response(messages):
-    response = llm_with_tools.invoke(messages)
-    gathered = None
-    for chunk in response:
-        yield chunk
-        if gathered is None:
-            gathered = chunk
-        else:
-            gathered += chunk
+    messages = [
+        HumanMessage(content="messages"),
+    ]
+    response = llm_with_tools.invoke({"messages":messages})
+    return(response)
+    # gathered = None
+    # for chunk in response:
+    #     yield chunk
+    #     if gathered is None:
+    #         gathered = chunk
+    #     else:
+    #         gathered += chunk
 
-    if gathered and getattr(gathered, "tool_calls", None):
-        st.session_state["messages"].append(gathered)
-        for tool_call in gathered.tool_calls:
-            selected_tool = tool_dict.get(tool_call['name'])
-            if selected_tool:
-                with st.spinner("도구 실행 중..."):
-                    tool_msg = selected_tool.invoke(tool_call)
-                    st.session_state["messages"].append(tool_msg)
-        # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(str(st.session_state["messages"]))
+    # if gathered and getattr(gathered, "tool_calls", None):
+    #     st.session_state["messages"].append(gathered)
+    #     for tool_call in gathered.tool_calls:
+    #         selected_tool = tool_dict.get(tool_call['name'])
+    #         if selected_tool:
+    #             with st.spinner("도구 실행 중..."):
+    #                 tool_msg = selected_tool.invoke(tool_call)
+    #                 st.session_state["messages"].append(tool_msg)
+    #     # 도구 호출 후 재귀적으로 응답 생성
+    #     yield from get_ai_response(st.session_state["messages"])
 
 
 @debug_wrap
@@ -548,7 +555,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
             response = get_ai_response(st.session_state["messages"])
-            result = st.chat_message("assistant").write(response)
+            result = st.chat_message("assistant").write(response["messages"][-1].content)
             st.session_state["messages"].append(AIMessage(result))
         else:
             # 문서 기반 답변
@@ -558,7 +565,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
-        result = st.chat_message("assistant").write(response)
+        result = st.chat_message("assistant").write(response["messages"][-1].content)
         st.session_state["messages"].append(AIMessage(result))
 
 
