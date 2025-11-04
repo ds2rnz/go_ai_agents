@@ -159,11 +159,11 @@ def answer_question(query: str, timeout_sec: int = 60):
        
         # ==================== QA Chain 생성 ====================
         qa_chain = create_retriever_tool(
-            llm=llm,  # llm 가져오기
-            chain_type="stuff",
             retriever=retriever,
-            return_source_documents=True,
+            name="document_search",
+            description="문서 기반 질의응답을 수행합니다."
             )
+        st.wri
         st.write("✅ qa_chain 생성 완료")
 
         # 질문 실행
@@ -549,7 +549,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
             response = get_ai_response(st.session_state["messages"])
-            result = st.chat_message("assistant").write_stream(response)
+            result = st.chat_message("assistant").write(response)
             st.session_state["messages"].append(AIMessage(result))
         else:
             # 문서 기반 답변
@@ -559,7 +559,7 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
-        result = st.chat_message("assistant").write_stream(response)
+        result = st.chat_message("assistant").write(response)
         st.session_state["messages"].append(AIMessage(result))
 
 
