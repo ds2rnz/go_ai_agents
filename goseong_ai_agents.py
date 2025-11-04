@@ -4,7 +4,7 @@ from langchain.tools import tool
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
-from langchain.agents import create_agent
+
 
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
@@ -22,8 +22,8 @@ import operator
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
-from openai import OpenAI
 from langchain_classic.tools.retriever import create_retriever_tool
+from openai import OpenAI
 
 import concurrent.futures
 import traceback
@@ -32,7 +32,41 @@ import time
 import base64
 import tempfile
 
-# 도구 정의
+load_dotenv()
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+
+
+
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    temperature=0.5,
+    timeout=30,  # 30초 타임아웃
+    max_retries=2 ) 
+
+
+
+def debug_wrap(func):
+    """함수 실행 시 에러나 중단점을 추적하기 위한 디버깅 래퍼"""
+    def wrapper(*args, **kwargs):
+        func_name = func.__name__
+        try:
+            print(f"[DEBUG] ▶ 실행 시작: {func_name}")
+            result = func(*args, **kwargs)
+            print(f"[DEBUG] ✅ 실행 성공: {func_name}")
+            return result
+        except Exception as e:
+            tb = traceback.format_exc()
+            print(f"\n[ERROR] ❌ 함수 '{func_name}' 에서 예외 발생:")
+            print(f"  └─ {e}")
+            print(tb)
+            st.error(f"❌ 함수 '{func_name}' 실행 중 오류 발생: {e}")
+            st.code(tb, language="python")
+            raise
+    return wrapper
+
+
+
+# -- 도구 정의 --
 @tool
 def get_current_time(timezone: str, location: str) -> str:
     """현재 시간을 지정된 타임존과 위치에 맞게 반환합니다."""
@@ -52,65 +86,37 @@ def get_web_search(query: str, search_period: str) -> str:
     search = DuckDuckGoSearchResults(api_wrapper=wrapper, source="news", results_separator=';\n')
     return search.invoke(query)
 
-
-load_dotenv()
-
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-
-
-# OPENAI_API_KEY = "OPENAI_API_KEY"
-
-
-client = OpenAI(api_key = "OPENAI_API_KEY")   
-
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.4, # 정확도  0.0 ~ 1.0
-    timeout=30,  # 30초 타임아웃
-    max_retries=2 ) 
-
-tools = [get_current_time, get_web_search]
-
-agent = create_agent(
-    model=llm,
-    tools=tools
-)
-
-
-
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
-llm_with_tools = agent # tool 사용 llm 정의
+llm_with_tools = llm.bind_tools(tools)
 
 
-# @debug_wrap / 에러 확인 함수 요청
-def get_ai_response(messages, thread_id: str = "default"):
-    config =  {"configurable": {"thread_id": thread_id}}
+@debug_wrap
+def get_ai_response(messages):
+    response = llm_with_tools.stream(messages)
     gathered = None
-    chunk = llm_with_tools.invoke(
-        {"messages": [{"role": "user", "content": messages}]},
-        config,
-        stream_mode="values"
-    )
-    if chunk not in chunk("tool_calls"):    
-        st.session_state["messages"].append(chunk)
-        for tool_call in chunk.tool_calls:
+    for chunk in response:
+        yield chunk
+        if gathered is None:
+            gathered = chunk
+        else:
+            gathered += chunk
+
+    if gathered and getattr(gathered, "tool_calls", None):
+        st.session_state.messages.append(gathered)
+        for tool_call in gathered.tool_calls:
             selected_tool = tool_dict.get(tool_call['name'])
             if selected_tool:
                 with st.spinner("도구 실행 중..."):
                     tool_msg = selected_tool.invoke(tool_call)
-                    st.write(f"tool_msg:{tool_msg}")
-                    st.session_state["messages"].append(tool_msg)
+                    st.session_state.messages.append(tool_msg)
         # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(st.session_state["messages"])
-    else:
-        return chunk["messages"][-1].content
+        yield from get_ai_response(st.session_state.messages)
 
 
-
-# @debug_wrap / 에러 확인 함수 요청
+@debug_wrap
 def answer_question(query: str, timeout_sec: int = 60):
-    """LLM 기반 PDF QA """
+    """LLM 기반 PDF QA - ThreadExecutor 제거한 안정적인 버전"""
 
     st.write("🚀 질문 처리 시작")
     start_time = time.time()
@@ -126,14 +132,14 @@ def answer_question(query: str, timeout_sec: int = 60):
         # 문서에서 유사도 검사
         docs_with_scores = vectorstore.similarity_search_with_score(query, k=3)
         
-        st.write(f"🔍 문서 검색 횟수: {len(docs_with_scores)}회")
+        st.write(f"🔍 문서 검색 횟수: {len(docs_with_scores)}개")
         
         # 디버깅: 유사도 점수 표시
         for i, (doc, score) in enumerate(docs_with_scores, 1):
             st.write(f"  문서 {i} 유사도: {score:.4f}")
         
         # 유사도 임계값 설정
-        SIMILARITY_THRESHOLD = 1.1
+        SIMILARITY_THRESHOLD = 1 
         
         relevant_docs = [doc for doc, score in docs_with_scores if score < SIMILARITY_THRESHOLD]
         
@@ -143,7 +149,7 @@ def answer_question(query: str, timeout_sec: int = 60):
         
         st.success(f"✅ {len(relevant_docs)}개의 관련 문서를 찾았습니다!")
 
-        # Retriever 생성 
+        # ==================== Retriever 생성 ====================
         retriever = vectorstore.as_retriever(
             search_type="similarity", 
             search_kwargs={"k": 3}
@@ -151,14 +157,14 @@ def answer_question(query: str, timeout_sec: int = 60):
         st.write("✅ retriever 생성 완료")
 
        
-        # QA Chain 생성
+        # ==================== QA Chain 생성 ====================
         qa_chain = create_retriever_tool(
             llm=llm,  # llm 가져오기
             chain_type="stuff",
             retriever=retriever,
             return_source_documents=True,
             )
-        st.write("✅ 유사도 연결 생성 완료")
+        st.write("✅ qa_chain 생성 완료")
 
         # 질문 실행
         try:
@@ -197,7 +203,7 @@ def answer_question(query: str, timeout_sec: int = 60):
     
 
 
-# @debug_wrap / 에러 확인 함수 요청
+@debug_wrap
 def process1_f(uploaded_files1):
     """PDF 파일을 학습하여 벡터스토어 생성"""
     
@@ -205,7 +211,7 @@ def process1_f(uploaded_files1):
     if uploaded_files1 and len(uploaded_files1) > 3:
         st.error("❌ PDF는 최대 3개까지 업로드 가능합니다!")
         st.warning("⚠️ PDF파일을 3개만 선택하여 주세요!")
-        return None  # 여기서 바로 return
+        return None  # ✅ 여기서 바로 return
     
     # 파일이 없는 경우
     if not uploaded_files1:
@@ -238,7 +244,7 @@ def process1_f(uploaded_files1):
                     splits = splitter.split_documents(data)
                     all_splits.extend(splits)
                     
-                    st.success(f"✅ {uploaded_file.name}: {len(splits)}개 문서로 분할")
+                    st.success(f"✅ {uploaded_file.name}: {len(splits)}개 청크 생성")
                     
                 finally:
                     # 임시 파일 삭제
@@ -246,12 +252,12 @@ def process1_f(uploaded_files1):
                         os.remove(tmp_path)
 
             # 총 청크 수 표시
-            st.info(f"📊 총 문서 분할 수: {len(all_splits)}")
+            st.info(f"📊 총 문서 청크 수: {len(all_splits)}")
 
             # Embedding 생성
             embedding = OpenAIEmbeddings(
                 model="text-embedding-3-large", 
-                api_key="OPENAI_API_KEY"
+                api_key=OPENAI_API_KEY
             )
             
             # 저장 디렉토리 설정
@@ -270,7 +276,7 @@ def process1_f(uploaded_files1):
                 batch = all_splits[i:i+batch_size]
                 batch_num = i//batch_size + 1
                 
-                status_text.text(f"🔄 배치 {batch_num}/{total_batches} 학습자료 저장 중...")
+                status_text.text(f"🔄 배치 {batch_num}/{total_batches} 임베딩 중...")
                 progress_bar.progress(batch_num / total_batches)
                 
                 try:
@@ -286,11 +292,11 @@ def process1_f(uploaded_files1):
                     time.sleep(1.5)  # API 레이트 리밋 방지
                     
                 except Exception as e:
-                    st.error(f"❌ 배치 {batch_num} 학습자료 저장 실패: {e}")
+                    st.error(f"❌ 배치 {batch_num} 임베딩 실패: {e}")
                     continue
 
             progress_bar.progress(1.0)
-            status_text.text("✅ 학습자료 저장 완료!")
+            status_text.text("✅ 임베딩 완료!")
             
             st.success("🎉 학습이 완료되었습니다!")
             # st.balloons()
@@ -310,7 +316,7 @@ st.set_page_config(
     page_title="고성군청 AI 도우미", 
     page_icon="🤖", 
     layout="wide",
-    initial_sidebar_state="expanded"  
+    initial_sidebar_state="expanded"  # 사이드바 숨김 상태로 시작
 )
 
 st.markdown("""
@@ -396,6 +402,9 @@ animated_input_css = """
 
 st.markdown(animated_input_css, unsafe_allow_html=True)
 
+# 이미지 가져오기
+# img_go = get_image("c:/faiss_store/go.png")
+
 # 타이틀
 st.markdown("""
     <style>
@@ -425,7 +434,7 @@ st.markdown("""
 with st.sidebar:
     st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
     
-# 문서 학습기
+# ========== 섹션 1: 문서 학습기 ==========
     st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
     
     st.markdown("""
@@ -488,15 +497,11 @@ with st.sidebar:
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-  
-    
-    # 구분선
-    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
-    
-    # 하단 정보 
+        
+    # ========== 하단 정보 ==========
     st.markdown("""
         <div style="text-align: center; padding: 1rem; color: #000000; font-size: 0.9rem;">
-            <p style="margin: 0;">Made by 🔍 총무행정관 정보관리팀</p>
+            <p style="margin: 0;">Made with ❤️ by 정보관리 Team</p>
             <p style="margin: 0.5rem 0 0 0;">v1.0.0 | 2025</p>
         </div>
     """, unsafe_allow_html=True)
@@ -514,7 +519,7 @@ if "vectorstore" not in st.session_state:
     st.session_state["vectorstore"] = None
 
 # 스트림릿 화면에 메시지 출력
-for msg in st.session_state["messages"]:
+for msg in st.session_state.messages:
     if msg.content:
         if isinstance(msg, SystemMessage):
             st.chat_message("system").write(msg.content)
@@ -530,7 +535,7 @@ for msg in st.session_state["messages"]:
 if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
     # 사용자 메시지 표시 및 저장
     st.chat_message("user").write(prompt)
-    st.session_state["messages"].append(HumanMessage(prompt))
+    st.session_state.messages.append(HumanMessage(prompt))
 
     # vectorstore 존재 여부 확인
     vectorstore = st.session_state.get("vectorstore")
@@ -543,25 +548,25 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer and len(answer) < 20:
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
-            response = get_ai_response(prompt)
-            result = st.chat_message("assistant").write(response)
+            response = get_ai_response(st.session_state["messages"])
+            result = st.chat_message("assistant").write_stream(response)
             st.session_state["messages"].append(AIMessage(result))
         else:
             # 문서 기반 답변
             st.chat_message("assistant").write(answer)
-            st.session_state["messages"].append(AIMessage(answer))
+            st.session_state.messages.append(AIMessage(answer))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
-        response = get_ai_response(prompt)
-        st.write(f"response: {response}")
-        result = st.chat_message("assistant").write(response)
+        response = get_ai_response(st.session_state["messages"])
+        result = st.chat_message("assistant").write_stream(response)
         st.session_state["messages"].append(AIMessage(result))
 
 
 # 문서 학습 함수 불러오기
 if process1:
     st.session_state["vectorstore"] = process1_f(uploaded_files1)
+
 
 
 
