@@ -87,21 +87,14 @@ llm_with_tools = agent # tool 사용 llm 정의
 def get_ai_response(messages, thread_id: str = "default"):
     config =  {"configurable": {"thread_id": thread_id}}
     gathered = None
-    for chunk in llm_with_tools.stream(
+    chunk = llm_with_tools.invoke(
         {"messages": [{"role": "user", "content": messages}]},
         config,
         stream_mode="values"
-    ):
-        yield chunk["messages"][-1].content
-        st.write(f"1: {chunk}")
-        if gathered is None:
-            gathered = chunk
-        else:
-            gathered += chunk
-    st.write(f"2: {chunk}")
-    if gathered and getattr(gathered, "tool_calls", None):
-        st.session_state["messages"].append(gathered)
-        for tool_call in gathered.tool_calls:
+    )
+    if chunk not in chunk("tool_calls"):    
+        st.session_state["messages"].append(chunk)
+        for tool_call in chunk.tool_calls:
             selected_tool = tool_dict.get(tool_call['name'])
             if selected_tool:
                 with st.spinner("도구 실행 중..."):
@@ -110,6 +103,9 @@ def get_ai_response(messages, thread_id: str = "default"):
                     st.session_state["messages"].append(tool_msg)
         # 도구 호출 후 재귀적으로 응답 생성
         yield from get_ai_response(st.session_state["messages"])
+    else:
+        return chunk["messages"][-1].content
+
 
 
 # @debug_wrap / 에러 확인 함수 요청
