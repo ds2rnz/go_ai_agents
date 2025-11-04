@@ -111,11 +111,11 @@ def get_ai_response(messages):
                     tool_msg = selected_tool.invoke(tool_call)
                     st.session_state["messages"].append(tool_msg)
         # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(st.session_state["messages"])
+        yield from get_ai_response(str(st.session_state["messages"]))
 
 
 @debug_wrap
-def answer_question(query: str, timeout_sec: int = 60):
+def answer_question(query: str, timeout_sec: int = 30):
     """LLM 기반 PDF QA - ThreadExecutor 제거한 안정적인 버전"""
 
     st.write("🚀 질문 처리 시작")
