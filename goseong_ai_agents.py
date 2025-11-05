@@ -18,7 +18,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import tempfile
 import ast
 
-from langchain_community.chains import RetrievalQA
+# from langchain_community.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 # from langchain_chroma import Chroma
 from langchain import PromptTemplate
