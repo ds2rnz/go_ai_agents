@@ -21,7 +21,7 @@ import ast
 # from langchain_community.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 # from langchain_chroma import Chroma
-from langchain import PromptTemplate
+# from langchain import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from openai import OpenAI
 
