@@ -542,7 +542,7 @@ for msg in st.session_state["messages"]:
 if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
     # 사용자 메시지 표시 및 저장
     st.chat_message("user").write(prompt)
-    st.session_state["messages"].append(ChatMessage("user", prompt))
+    st.session_state["messages"].append(ChatMessage("user", str(prompt)))
 
     # vectorstore 존재 여부 확인
     vectorstore = st.session_state.get("vectorstore")
