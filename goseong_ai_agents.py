@@ -25,6 +25,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from langchain_classic.tools.retriever import create_retriever_tool
 from openai import OpenAI
+from langchain_core.messages import ChatMessage
 
 import concurrent.futures
 import traceback
@@ -541,7 +542,7 @@ for msg in st.session_state["messages"]:
 if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
     # 사용자 메시지 표시 및 저장
     st.chat_message("user").write(prompt)
-    st.session_state["messages"].append(HumanMessage(prompt))
+    st.session_state["messages"].append(ChatMessage("user", prompt))
 
     # vectorstore 존재 여부 확인
     vectorstore = st.session_state.get("vectorstore")
@@ -560,13 +561,13 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         else:
             # 문서 기반 답변
             st.chat_message("assistant").write(answer)
-            #st.session_state["messages"].append(AIMessage(answer))
+            st.session_state["messages"].append(ChatMessage("assistant", answer))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
         result = st.chat_message("assistant").write(response["messages"][-1].content)
-        #st.session_state["messages"].append(AIMessage(result))
+        st.session_state["messages"].append(ChatMessage("assistant", result))
 
 
 # 문서 학습 함수 불러오기
