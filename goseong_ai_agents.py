@@ -96,7 +96,7 @@ def get_web_search(query: str, search_period: str) -> str:
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
 llm_with_tools = create_agent(
-    model=llm,
+    model="gpt-4o-mini",
     tools=[get_current_time, get_web_search])
 
 
@@ -563,17 +563,17 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
             st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
             response = get_ai_response(st.session_state["messages"])
             result = st.chat_message("assistant").write(response["messages"][-1].content)
-            #st.session_state["messages"].append(result)
+            st.session_state["messages"].append(result)
         else:
             # 문서 기반 답변
             st.chat_message("assistant").write(answer)
-            #st.session_state["messages"].append(ChatMessage("assistant", answer))
+            st.session_state["messages"].append(ChatMessage("assistant", answer))
     else:
         # 일반 AI 모드
         st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         response = get_ai_response(st.session_state["messages"])
         result = st.chat_message("assistant").write(response["messages"][-1].content)
-        #st.session_state["messages"].append(ChatMessage("assistant", result))
+        st.session_state["messages"].append(ChatMessage("assistant", result))
 
 
 # 문서 학습 함수 불러오기
