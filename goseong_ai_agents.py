@@ -83,7 +83,8 @@ def get_web_search(query: str, search_period: str) -> str:
     """DuckDuckGo API를 이용해 지정된 기간 내의 뉴스를 검색하여 결과를 반환합니다."""
     wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
     search = DuckDuckGoSearchResults(api_wrapper=wrapper, source="news", results_separator=';\n')
-    return search.invoke(query)
+    docs = search.invoke(query)
+    return docs
 
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
@@ -94,6 +95,7 @@ llm_with_tools = llm.bind_tools(tools)
 def get_ai_response(messages):
     response = llm_with_tools.stream(messages)
     gathered = None
+
     for chunk in response:
         yield chunk
         if gathered is None:
@@ -101,16 +103,30 @@ def get_ai_response(messages):
         else:
             gathered += chunk
 
-    if gathered and getattr(gathered, "tool_calls", None):
+    if gathered.tool_calls:
         st.session_state.messages.append(gathered)
+        
         for tool_call in gathered.tool_calls:
-            selected_tool = tool_dict.get(tool_call['name'])
-            if selected_tool:
-                with st.spinner("도구 실행 중..."):
-                    tool_msg = selected_tool.invoke(tool_call)
-                    st.session_state.messages.append(tool_msg)
-        # 도구 호출 후 재귀적으로 응답 생성
-        yield from get_ai_response(st.session_state.messages)
+            with st.spinner("도구 실행 중..."):
+                selected_tool = tool_dict[tool_call['name']]
+                tool_msg = selected_tool.invoke(tool_call) 
+                print(tool_msg, type(tool_msg))
+                st.session_state.messages.append(tool_msg)
+           
+        for chunk in get_ai_response(st.session_state.messages):
+            yield chunk
+
+
+    # if gathered and getattr(gathered, "tool_calls", None):
+    #     st.session_state.messages.append(gathered)
+    #     for tool_call in gathered.tool_calls:
+    #         selected_tool = tool_dict.get(tool_call['name'])
+    #         if selected_tool:
+    #             with st.spinner("도구 실행 중..."):
+    #                 tool_msg = selected_tool.invoke(tool_call)
+    #                 st.session_state.messages.append(tool_msg)
+    #     # 도구 호출 후 재귀적으로 응답 생성
+    #     yield from get_ai_response(st.session_state.messages)
 
 
 @debug_wrap
@@ -352,9 +368,8 @@ with st.sidebar:
     # 로고/타이틀 (선택사항)
     st.markdown("""
         <div style="text-align: center; padding: 0rem;">
-            <h1 style="font-size: 3.5rem; margin: 0; color: #1e293b; display: inline-block; vertical-align: middle;">🤖</h1>
             <p style="font-size: 2.2rem; color: #1e748b; margin: 0 4rem 0 0; display: inline-block; vertical-align: middle;">
-                AI 학습기
+                문서 학습기
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -502,11 +517,7 @@ with st.sidebar:
 
 
 
-# 문서 학습 함수 불러오기
-if process1:
-    st.session_state["vectorstore"] = process1_f(uploaded_files1)
-
-   
+  
 
 # 스트림릿 session_state에 메시지 저장
 if "messages" not in st.session_state:
@@ -556,4 +567,9 @@ if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
         response = get_ai_response(st.session_state["messages"])
         result = st.chat_message("assistant").write(response)
         st.session_state["messages"].append(AIMessage(result)) 
+
+
+ # 문서 학습 함수 불러오기
+if process1:
+    st.session_state["vectorstore"] = process1_f(uploaded_files1)       
 
