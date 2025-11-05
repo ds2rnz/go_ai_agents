@@ -106,7 +106,7 @@ def get_ai_response(messages):
         HumanMessage(content="messages"),
     ]
     response = llm_with_tools.invoke({"messages":messages})
-    st.write(response["messages"][2])
+    st.write(response["messages"][0])
     return(response)
     # gathered = None
     # for chunk in response:
