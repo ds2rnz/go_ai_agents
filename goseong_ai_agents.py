@@ -1,11 +1,9 @@
 import streamlit as st
-from langchain_community.chat_models import ChatOpenAI
-from langchain.tools import tool
-from langchain.messages import SystemMessage, HumanMessage, AIMessage
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from datetime import datetime
-from langchain.agents import create_agent
-
+from langchain_classic.tools.retriever import create_retriever_tool
 
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
@@ -17,31 +15,30 @@ from typing import TypedDict, Annotated, List
 from langgraph.graph import StateGraph, END
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+import tempfile
 import ast
-import operator
 
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
-from langchain_core.prompts import PromptTemplate
+from langchain_community.chains import RetrievalQA
+from langchain_openai import OpenAIEmbeddings
+# from langchain_chroma import Chroma
+from langchain import PromptTemplate
 from langchain_community.vectorstores import FAISS
-from langchain_classic.tools.retriever import create_retriever_tool
 from openai import OpenAI
-from langchain_core.messages import ChatMessage
 
 import concurrent.futures
 import traceback
 import inspect
 import time
-import base64
-import tempfile
+from langchain import AIMessage
 
 load_dotenv()
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
-
+client = OpenAI()
 
 llm = ChatOpenAI(
     model="gpt-4o-mini",
-    temperature=0.5,
+    temperature=0.4,
     timeout=30,  # 30초 타임아웃
     max_retries=2 ) 
 
@@ -86,50 +83,38 @@ def get_web_search(query: str, search_period: str) -> str:
     """DuckDuckGo API를 이용해 지정된 기간 내의 뉴스를 검색하여 결과를 반환합니다."""
     wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
     search = DuckDuckGoSearchResults(api_wrapper=wrapper, source="news", results_separator=';\n')
-    st.markdown(search)
     return search.invoke(query)
-# import requests,json
-
-# data = response.json()
-# return json.dumps(data
 
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
-llm_with_tools = create_agent(
-    model="gpt-4o-mini",
-    tools=[get_current_time, get_web_search])
+llm_with_tools = llm.bind_tools(tools)
 
 
 @debug_wrap
 def get_ai_response(messages):
-    messages = [
-        HumanMessage(content="messages"),
-    ]
-    response = llm_with_tools.invoke({"messages":messages})
-    st.write(response["messages"][0])
-    return(response)
-    # gathered = None
-    # for chunk in response:
-    #     yield chunk
-    #     if gathered is None:
-    #         gathered = chunk
-    #     else:
-    #         gathered += chunk
+    response = llm_with_tools.stream(messages)
+    gathered = None
+    for chunk in response:
+        yield chunk
+        if gathered is None:
+            gathered = chunk
+        else:
+            gathered += chunk
 
-    # if gathered and getattr(gathered, "tool_calls", None):
-    #     st.session_state["messages"].append(gathered)
-    #     for tool_call in gathered.tool_calls:
-    #         selected_tool = tool_dict.get(tool_call['name'])
-    #         if selected_tool:
-    #             with st.spinner("도구 실행 중..."):
-    #                 tool_msg = selected_tool.invoke(tool_call)
-    #                 st.session_state["messages"].append(tool_msg)
-    #     # 도구 호출 후 재귀적으로 응답 생성
-    #     yield from get_ai_response(st.session_state["messages"])
+    if gathered and getattr(gathered, "tool_calls", None):
+        st.session_state.messages.append(gathered)
+        for tool_call in gathered.tool_calls:
+            selected_tool = tool_dict.get(tool_call['name'])
+            if selected_tool:
+                with st.spinner("도구 실행 중..."):
+                    tool_msg = selected_tool.invoke(tool_call)
+                    st.session_state.messages.append(tool_msg)
+        # 도구 호출 후 재귀적으로 응답 생성
+        yield from get_ai_response(st.session_state.messages)
 
 
 @debug_wrap
-def answer_question(query: str, timeout_sec: int = 30):
+def answer_question(query: str, timeout_sec: int = 60):
     """LLM 기반 PDF QA - ThreadExecutor 제거한 안정적인 버전"""
 
     st.write("🚀 질문 처리 시작")
@@ -218,120 +203,70 @@ def answer_question(query: str, timeout_sec: int = 30):
 
 @debug_wrap
 def process1_f(uploaded_files1):
-    """PDF 파일을 학습하여 벡터스토어 생성"""
-    
-    # 파일 개수 체크
     if uploaded_files1 and len(uploaded_files1) > 3:
-        st.error("❌ PDF는 최대 3개까지 업로드 가능합니다!")
-        st.warning("⚠️ PDF파일을 3개만 선택하여 주세요!")
-        return None  # ✅ 여기서 바로 return
-    
-    # 파일이 없는 경우
+        st.warning("PDF는 최대 3개까지 업로드 가능합니다!")
+        st.warning("PDF파일을 3개만 선택하여 주세요!")
+        return None
+        uploaded_files1 = uploaded_files1[:3]
+
     if not uploaded_files1:
-        st.warning("⚠️ PDF 파일을 업로드해주세요.")
         return None
 
-    try:
-        with st.spinner("📚 PDF 임베딩 및 벡터스토어 생성 중... 잠시만 기다려주세요"):
-            all_splits = []
-            
-            # 각 PDF 파일 처리
-            for idx, uploaded_file in enumerate(uploaded_files1, 1):
-                st.write(f"📄 {idx}/{len(uploaded_files1)} 파일 처리 중: {uploaded_file.name}")
-                
-                # 임시 파일 생성
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                    tmp_file.write(uploaded_file.read())
-                    tmp_path = tmp_file.name
+    with st.spinner("PDF 임베딩 및 벡터스토어 생성 중... 기다려주세요"):
+        all_splits = []
+        for uploaded_file in uploaded_files1:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(uploaded_file.read())
+                tmp_path = tmp_file.name
 
-                try:
-                    # PDF 로드
-                    loader = PyPDFLoader(tmp_path)
-                    data = loader.load()
-                    
-                    # 청킹
-                    splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=300, 
-                        chunk_overlap=50
+            loader = PyPDFLoader(tmp_path)
+            data = loader.load()
+            splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)
+            splits = splitter.split_documents(data)
+            all_splits.extend(splits)
+
+            # 파일 닫고 삭제
+            tmp_file.close()
+            os.remove(tmp_path)
+
+        embedding = OpenAIEmbeddings(model="text-embedding-3-large", api_key=OPENAI_API_KEY)
+        persist_directory = "c:/faiss_store"
+        os.makedirs(persist_directory, exist_ok=True)
+        st.write(f"총 문서 청크 수: {len(all_splits)}")
+
+        # 배치 단위 임베딩 및 벡터스토어 생성
+        batch_size = 20
+        vectorstore = None
+        for i in range(0, len(all_splits), batch_size):
+            batch = all_splits[i:i+batch_size]
+            st.write(f"배치 {i//batch_size + 1} 임베딩 중...")
+            # batch 문서 임베딩
+            try:
+                if vectorstore is None:
+                    vectorstore = FAISS.from_documents(batch, embedding
+                        # documents=batch,
+                        # embedding=embedding,
+                        # persist_directory=persist_directory
                     )
-                    splits = splitter.split_documents(data)
-                    all_splits.extend(splits)
-                    
-                    st.success(f"✅ {uploaded_file.name}: {len(splits)}개 청크 생성")
-                    
-                finally:
-                    # 임시 파일 삭제
-                    if os.path.exists(tmp_path):
-                        os.remove(tmp_path)
+                else:
+                    vectorstore.add_documents(batch)
+                vectorstore.save_local(persist_directory)
+                time.sleep(1.5)  # API 과부하 방지용 약간의 대기
+            except Exception as e:
+                st.error(f"임베딩 에러: {e}")    
 
-            # 총 청크 수 표시
-            st.info(f"📊 총 문서 청크 수: {len(all_splits)}")
-
-            # Embedding 생성
-            embedding = OpenAIEmbeddings(
-                model="text-embedding-3-large", 
-                api_key=OPENAI_API_KEY
-            )
-            
-            # 저장 디렉토리 설정
-            persist_directory = "c:/faiss_store"
-            os.makedirs(persist_directory, exist_ok=True)
-
-            # 배치 단위 임베딩
-            batch_size = 20
-            vectorstore = None
-            total_batches = (len(all_splits) + batch_size - 1) // batch_size
-            
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            for i in range(0, len(all_splits), batch_size):
-                batch = all_splits[i:i+batch_size]
-                batch_num = i//batch_size + 1
-                
-                status_text.text(f"🔄 배치 {batch_num}/{total_batches} 임베딩 중...")
-                progress_bar.progress(batch_num / total_batches)
-                
-                try:
-                    if vectorstore is None:
-                        # 첫 배치로 vectorstore 생성
-                        vectorstore = FAISS.from_documents(batch, embedding)
-                    else:
-                        # 기존 vectorstore에 추가
-                        vectorstore.add_documents(batch)
-                    
-                    # 로컬에 저장
-                    vectorstore.save_local(persist_directory)
-                    time.sleep(1.5)  # API 레이트 리밋 방지
-                    
-                except Exception as e:
-                    st.error(f"❌ 배치 {batch_num} 임베딩 실패: {e}")
-                    continue
-
-            progress_bar.progress(1.0)
-            status_text.text("✅ 임베딩 완료!")
-            
-            st.success("🎉 학습이 완료되었습니다!")
-            # st.balloons()
-            st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
-            return vectorstore
-            
-    except Exception as e:
-        st.error(f"❌ 학습 중 오류 발생: {e}")
-        st.code(traceback.format_exc(), language="python")
-        return None
+        st.success("학습이 완료되었습니다!")
+        return vectorstore
 
 
 
+# --- Streamlit 앱 설정 ---
+st.set_page_config(page_title="AI 도우미", page_icon="💬", layout="wide")
 
-# 페이지 설정
-st.set_page_config(
-    page_title="고성군청 AI 도우미", 
-    page_icon="🤖", 
-    layout="wide",
-    initial_sidebar_state="expanded"  # 사이드바 숨김 상태로 시작
-)
+st.title("💬 고성군청 :blue[AI] 도우미")
 
+
+# --- 화면 디자인 ---
 st.markdown("""
     <style>
     /* 기본 바디 폰트 및 배경 */
@@ -344,8 +279,6 @@ st.markdown("""
     
      /* 입력창 스타일 */
     .stChatInput input {
-        width: 60%;  /* 입력창의 너비를 60%로 설정 */
-        height: 10%;  /* 높이 증가 */    
         border: 2px solid #3b82f6;
         border-radius: 25px;
         padding: 15px 25px;
@@ -415,45 +348,27 @@ animated_input_css = """
 
 st.markdown(animated_input_css, unsafe_allow_html=True)
 
-# 이미지 가져오기
-# img_go = get_image("c:/faiss_store/go.png")
-
-# 타이틀
-st.markdown("""
-    <style>
-        .centered-title {
-            text-align: center;
-            font-size: 3rem;
-            color: #1e293b;
-            margin-top: 0px;  /* 위쪽 마진 */
-            margin-bottom: 3px;  /* 아래쪽 마진 */
-            margin-left: 0px;  /* 왼쪽 마진 */
-            margin-right: 0px;  /* 오른쪽 마진 */
-        }
-        .ai-text {
-            font-size: 3.5rem; /* AI 글자 크기 */
-            color: #2563eb;
-            margin-left: 10px; /* AI 단어 왼쪽에 여백 추가 */
-            margin-right: 10px; /* AI 단어 오른쪽 여백 추가 */
-        }
-    </style> 
-    <h1 style="text-align: center; font-size: 3rem; color: #1e293b;">
-    💬 고성군청 <span class="ai-text">AI</span> 도우미 </h>
-                                
-""", unsafe_allow_html=True)
-
-
-# 사이드바 설정
 with st.sidebar:
-    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
+    # 로고/타이틀 (선택사항)
+    st.markdown("""
+        <div style="text-align: center; padding: 0rem;">
+            <h1 style="font-size: 3.5rem; margin: 0; color: #1e293b; display: inline-block; vertical-align: middle;">🤖</h1>
+            <p style="font-size: 2.2rem; color: #1e748b; margin: 0 4rem 0 0; display: inline-block; vertical-align: middle;">
+                AI 학습기
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     
-# ========== 섹션 1: 문서 학습기 ==========
+    # ========== 섹션 1: 문서 학습기 ==========
     st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
     
     st.markdown("""
-        <h2 style="text-align: center; font-size: 1.7rem; color: #000000;">📚 문서 학습기</h2>
-        """, unsafe_allow_html=True)
-
+        <div class="sidebar-header">
+            <span>📚</span>
+            <span>문서 학습기</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.markdown("""
         <p class="upload-label">
             📎 PDF 파일 업로드 
@@ -510,14 +425,86 @@ with st.sidebar:
     
     st.markdown('</div>', unsafe_allow_html=True)
     
-        
+    # 구분선
+    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+    
+    # ========== 섹션 2: PDF 분석기 ==========
+    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
+    
+    st.markdown("""
+        <div class="sidebar-header">
+            <span>🔍</span>
+            <span>PDF 분석기</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("""
+        <p class="upload-label">
+            📎 분석할 PDF 업로드
+            <span class="badge badge-blue">1개</span>
+        </p>
+    """, unsafe_allow_html=True)
+    
+    uploaded_files2 = st.file_uploader(
+        "분석할 PDF 선택",
+        type=['pdf'],
+        key="uploader2",
+        label_visibility="collapsed"
+    )
+    
+    # 업로드된 파일 표시
+    if uploaded_files2:
+        st.markdown(f"""
+            <div style="background: #eff6ff; padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem;">
+                <p style="margin: 0; font-size: 0.85rem; color: #1e40af; font-weight: 500;">
+                    📄 {uploaded_files2.name[:35]}{'...' if len(uploaded_files2.name) > 35 else ''}
+                </p>
+                <p style="margin: 0.3rem 0 0 0; font-size: 0.75rem; color: #64748b;">
+                    크기: {uploaded_files2.size / 1024:.1f} KB
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    process2 = st.button(
+        "🚀 분석 시작",
+        key="process2",
+        # type="primary",
+        # disabled=(uploaded_files2 is None),
+        use_container_width=True
+    )
+    
+    # 사용방법
+    st.markdown("""
+        <div class="usage-box">
+            <div class="usage-title">
+                💡 사용방법
+            </div>
+            <ol class="usage-list">
+                <li>PDF 파일 1개 업로드</li>
+                <li>"분석 시작" 버튼 클릭</li>
+                <li>키워드, 통계 등 분석 결과 확인</li>
+            </ol>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 구분선
+    st.markdown('<hr class="custom-divider">', unsafe_allow_html=True)
+    
     # ========== 하단 정보 ==========
     st.markdown("""
-        <div style="text-align: center; padding: 1rem; color: #000000; font-size: 0.9rem;">
-            <p style="margin: 0;">Made with ❤️ by 정보관리 Team</p>
+        <div style="text-align: center; padding: 1rem; color: #94a3b8; font-size: 0.8rem;">
+            <p style="margin: 0;">Made with 🔍 by 정보관리 Team</p>
             <p style="margin: 0.5rem 0 0 0;">v1.0.0 | 2025</p>
         </div>
     """, unsafe_allow_html=True)
+
+
+
+# 문서 학습 함수 불러오기
+if process1:
+    st.session_state["vectorstore"] = process1_f(uploaded_files1)
 
    
 
@@ -532,8 +519,8 @@ if "vectorstore" not in st.session_state:
     st.session_state["vectorstore"] = None
 
 # 스트림릿 화면에 메시지 출력
-for msg in st.session_state["messages"]:
-    if msg:
+for msg in st.session_state.messages:
+    if msg.content:
         if isinstance(msg, SystemMessage):
             st.chat_message("system").write(msg.content)
         elif isinstance(msg, AIMessage):
@@ -546,41 +533,27 @@ for msg in st.session_state["messages"]:
 
 # 사용자 입력 처리
 if prompt := st.chat_input(placeholder="✨ 무엇이든 물어보세요?"):
-    # 사용자 메시지 표시 및 저장
     st.chat_message("user").write(prompt)
-    st.session_state["messages"].append(prompt)
+    st.session_state.messages.append(HumanMessage(prompt))
 
     # vectorstore 존재 여부 확인
-    vectorstore = st.session_state.get("vectorstore")
-    
-    if vectorstore is not None:
+    if st.session_state.get("vectorstore") is not None:
         # 벡터스토어 기반 답변
-        with st.spinner("📚 학습된 문서를 검색하는 중..."):
-            answer = answer_question(prompt)
+        st.write("📚 학습된 문서를 기반으로 답변합니다...")
+        answer = answer_question(prompt)
         
-        # 관련 문서가 없는 경우 일반 모드로 전환
-        if answer and "죄송합니다. " in answer and len(answer) < 20:
-            st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
+        if answer == "죄송합니다. ":
+            st.write("🤖 일반 AI 모드로 답변합니다...")
             response = get_ai_response(st.session_state["messages"])
-            result = st.chat_message("assistant").write(response["messages"][-1].content)
-            st.session_state["messages"].append(result)
-        else:
-            # 문서 기반 답변
+            result = st.chat_message("assistant").write_stream(response)
+            st.session_state["messages"].append(AIMessage(result)) 
+        else:    
             st.chat_message("assistant").write(answer)
-            st.session_state["messages"].append(ChatMessage("assistant", answer))
+            st.session_state.messages.append(AIMessage(answer))
     else:
-        # 일반 AI 모드
-        st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
+        # 기존 도구 결합 LLM 답변
+        st.write("🤖 일반 AI 모드로 답변합니다...")
         response = get_ai_response(st.session_state["messages"])
-        result = st.chat_message("assistant").write(response["messages"][-1].content)
-        st.session_state["messages"].append(ChatMessage("assistant", result))
-
-
-# 문서 학습 함수 불러오기
-if process1:
-    st.session_state["vectorstore"] = process1_f(uploaded_files1)
-
-
-
-
+        result = st.chat_message("assistant").write_stream(response)
+        st.session_state["messages"].append(AIMessage(result)) 
 
