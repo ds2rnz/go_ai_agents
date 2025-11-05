@@ -86,7 +86,12 @@ def get_web_search(query: str, search_period: str) -> str:
     """DuckDuckGo API를 이용해 지정된 기간 내의 뉴스를 검색하여 결과를 반환합니다."""
     wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
     search = DuckDuckGoSearchResults(api_wrapper=wrapper, source="news", results_separator=';\n')
+    st.markdown(search)
     return search.invoke(query)
+# import requests,json
+
+# data = response.json()
+# return json.dumps(data
 
 tools = [get_current_time, get_web_search]
 tool_dict = {tool.name: tool for tool in tools}
@@ -101,6 +106,7 @@ def get_ai_response(messages):
         HumanMessage(content="messages"),
     ]
     response = llm_with_tools.invoke({"messages":messages})
+    st.write(response["messages"][2])
     return(response)
     # gathered = None
     # for chunk in response:
