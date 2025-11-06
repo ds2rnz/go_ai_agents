@@ -66,9 +66,9 @@ messages = [
 for msg in messages:
     if msg:
         if isinstance(msg, SystemMessage):
-            st.chat_message("system").write(SystemMessage(msg['messages'][-1].content))
+            st.chat_message("system").write(SystemMessage(msg.content))
         elif isinstance(msg, AIMessage):
-            st.chat_message("assistant").write(AIMessage(msg['messages'][-1].content))
+            st.chat_message("assistant").write(AIMessage(msg.content))
         elif isinstance(msg, HumanMessage):
             st.chat_message("user").write(HumanMessage(msg['messages'][-1].content))
 
