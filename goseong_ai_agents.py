@@ -51,6 +51,7 @@ def get_ai_response(messages):
     # 스트리밍 응답 처리
     if isinstance(response.content, str):
         # response.content가 리스트일 때 각 chunk를 처리
+    else: 
         for chunk in response.content:
             # chunk가 딕셔너리일 경우에만 get() 사용
             if isinstance(chunk, dict):
