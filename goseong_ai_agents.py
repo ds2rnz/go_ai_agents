@@ -1,26 +1,17 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
-from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain.tools import tool
+from langchain.chat_models import init_chat_model
+from langchain.agents import create_agent
 from datetime import datetime
+from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from dotenv import load_dotenv
 import os
+from langchain.messages import HumanMessage, ToolMessage, SystemMessage, AIMessage
 
-load_dotenv()
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-
-# 모델 초기화
-llm = ChatOpenAI(
-    model="gpt-4o-mini",
-    temperature=0.4, 
-    timeout=10,  
-    max_retries=2 
-)
-
-# 도구 함수 정의
 @tool
 def get_current_time(timezone: str, location: str) -> str:
     '''  해당 지역 현재시각을 구하는 함수 '''
@@ -31,46 +22,31 @@ def get_current_time(timezone: str, location: str) -> str:
         return result
     except pytz.UnknownTimeZoneError:
         return f"알 수 없는 타임존: {timezone}"
-    
-@tool
-def get_web_search(query: str, search_period: str) -> str:
-    ''' 덕덕고를 이용하여 웹 검색하는 함수 '''
-    wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
-    search = DuckDuckGoSearchResults(api_wrapper=wrapper, results_separator=';\n')
-    docs = search.invoke(query)
-    return docs
 
-tools = [get_current_time, get_web_search]
-tool_dict = [{"type": "web_search"},]
+load_dotenv()
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
-llm_with_tools = llm.bind_tools(tools)
+ddg_search_tool = DuckDuckGoSearchRun()
 
-# 사용자의 메시지 처리하기 위한 함수
-def get_ai_response(messages):
-    response = llm_with_tools.invoke(messages, tools=tools)  # AI 응답 호출
-    
-    # 만약 response.content가 문자열이면 바로 출력
-    if isinstance(response.content, str):
-        return response.content  # 문자열이면 바로 반환
-    
-    # response.content가 리스트인 경우 각 chunk를 처리
-    result = []
-    for chunk in response.content:
-        # chunk가 딕셔너리일 경우에만 get() 사용
-        if isinstance(chunk, dict):
-            # 'type' 키가 존재하고, 'text' 타입인 경우
-            if chunk.get("type") == "text":
-                result.append(chunk.get("text", ""))
-        else:
-            # 만약 chunk가 문자열이라면 그대로 처리
-            result.append(chunk)
-    
-    # 리스트로 모은 결과를 하나의 문자열로 합침
-    return result   
+llm = init_chat_model(
+    model = "openai:gpt-4o-mini",
+    temperature=0.5, 
+    max_tokens=1000, 
+    timeout=10, 
+    max_retries=2, 
+    )
+
+agent = create_agent(
+    model=llm,
+    tools=[get_current_time, ddg_search_tool],
+    middleware=[],
+)
+
+
 
 # --- Streamlit 앱 설정 ---
-st.set_page_config(page_title="AI Chat", page_icon="💬", layout="wide")
-st.title("💬 고성군청 AI Chatbot 도우미")
+st.set_page_config(page_title="GPT AI 도우미", page_icon="💬", layout="wide")
+st.title("💬 고성군청 AI 도우미")
 
 # --- 화면 디자인 ---
 st.markdown("""
@@ -81,17 +57,18 @@ st.markdown("""
 
 # 스트림릿 session_state에 메시지 저장
 messages = [
-        SystemMessage(content="저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다."),
-        AIMessage(content="무엇을 도와 드릴까요?")
+        {"role": "system", "content": "저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다."},
+        {"role": "user", "content": ""},
+        {"role": "assistant", "content": "무엇이을 도와 드릴까요?"}
 ]
 
 # 스트림릿 화면에 메시지 출력
 for msg in messages:
     if msg:
         if isinstance(msg, SystemMessage):
-            st.chat_message("system").write(msg.content)
+            st.chat_message("system").write(SystemMessage(msg['messages'].content))
         elif isinstance(msg, AIMessage):
-            st.chat_message("assistant").write(msg.content)
+            st.chat_message("assistant").write(AIMessage(msg['messages'].content))
         elif isinstance(msg, HumanMessage):
             st.chat_message("user").write(msg.content)
 
@@ -99,6 +76,6 @@ for msg in messages:
 if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt)  # 사용자 메시지 출력
     messages.append(HumanMessage(prompt))  # 사용자 메시지 저장
-    response = get_ai_response(messages)  # AI 응답 처리
-    messages.append(AIMessage(response))  # AI 메시지 저장
-    st.chat_message("assistant").write(response)  # AI 응답 출력
+    response = agent.invoke({"messages":[{"role":"user", "content":prompt}]})  # AI 응답 처리
+    messages.append(AIMessage(response['messages'][-1].content))  # AI 메시지 저장
+    st.chat_message("assistant").write(response['messages'][-1].content)  # AI 응답 출력
