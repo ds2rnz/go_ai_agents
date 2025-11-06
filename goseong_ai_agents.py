@@ -50,8 +50,6 @@ def get_ai_response(messages):
     response = llm_with_tools.invoke(messages) 
     # 스트리밍 응답 처리
     if isinstance(response.content, str):
-
-    else:
         # response.content가 리스트일 때 각 chunk를 처리
         for chunk in response.content:
             # chunk가 딕셔너리일 경우에만 get() 사용
