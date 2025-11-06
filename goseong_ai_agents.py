@@ -1,140 +1,75 @@
 import streamlit as st
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
-
-from langchain_core.tools import tool
-from datetime import datetime
-import pytz
-
-from langchain_community.tools import DuckDuckGoSearchResults
-from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
-
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from pprint import pprint
+from langchain.chat_models import init_chat_model
+from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+from langchain.messages import HumanMessage, ToolMessage
+from langchain_openai import ChatOpenAI
+
+# 커스텀 tool 생성
+@tool 
+def calculator(num_1:int, num_2:int) -> int: # typehint는 Agent가 tool의 입출력 형식을 이해하는 데 도움을 줍니다. 안정적인 작동을 위해 반드시 작성하는게 좋습니다.
+    """입력받은 두 수의 덧셈을 반환합니다.""" # docstring은 tool의 설명으로 사용됩니다. Agent가 tool을 선택하는 데 도움을 줍니다.
+    return num_1 + num_2
 
 load_dotenv()
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+
+ddg_search_tool = DuckDuckGoSearchRun()
 
 # 모델 초기화
-llm = ChatOpenAI(model="gpt-4o-mini")
-
-# 도구 함수 정의
-@tool
-def get_current_time(timezone: str, location: str) -> str:
-    """현재 시각을 반환하는 함수."""
-    try:
-        tz = pytz.timezone(timezone)
-        now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-        result = f'{timezone} ({location}) 현재시각 {now}'
-        print(result)
-        return result
-    except pytz.UnknownTimeZoneError:
-        return f"알 수 없는 타임존: {timezone}"
-    
-@tool
-def get_web_search(query: str, search_period: str) -> str:	#①
-	#③
-    """
-    웹 검색을 수행하는 함수.
-
-    Args:
-        query (str): 검색어
-        search_period (str): 검색 기간 (e.g., "w" for past week, "m" for past month, "y" for past year)	#②
-
-    Returns:
-        str: 검색 결과
-    """
-    wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
-
-    print('-------- WEB SEARCH --------')
-    print(query)
-    print(search_period)
-
-    search = DuckDuckGoSearchResults(
-        api_wrapper=wrapper,
-        # source="news",
-        results_separator=';\n'
+llm = init_chat_model(
+    model = "openai:gpt-4o-mini",
+    temperature=0.5, 
+    max_tokens=2000, 
+    timeout=10, 
+    max_retries=2, 
     )
 
-    docs = search.invoke(query)
-    return docs
+agent = create_agent(
+    model=llm,
+    tools=[calculator, ddg_search_tool],
+    system_prompt="너는 친절한 도우미야",
+    middleware=[],
+)
 
+model = ChatOpenAI(
+    model="gpt-4o-mini",
+)
 
-# 도구 바인딩
-tools = [get_current_time, get_web_search]
-tool_dict = {
-    "get_current_time": get_current_time, 
-    "get_web_search": get_web_search
-}
+tools = model.bind_tools([calculator])
+opneai_tool = [{"type": "web_search"},]
 
-llm_with_tools = llm.bind_tools(tools)
-
-
-# 사용자의 메시지 처리하기 위한 함수
-def get_ai_response(messages):
-    response = llm_with_tools.stream(messages) # ① llm.stream()을 llm_with_tools.stream()로 변경
-    
-    gathered = None
-    tool_messages =[]
-    for chunk in response:
-        yield chunk
+response = model.invoke("올해 11월 한국에서 개봉하는 영화는? 그리고 11 더기기 15는 얼마야?"
+        , tools=opneai_tool )
+# pprint(response.content)
+for setp in response.content:
+    if setp.get("type") == "text":
+        st.chat_message("assistant").write(setp["text"])
         
-        if gathered is None: #  ③
-            gathered = chunk
-        else:
-            gathered += chunk
- 
-    if gathered.tool_calls:
-        st.session_state.messages.append(gathered)
+
+
+response1 = agent.invoke({"messages":[{"role":"user", "content":"올해 11월 한국에서 개봉하는 영화는? 그리고 11 더기기 15는 얼마야?"}]})
+st.chat_message("assistant").write(response1['messages'][-1].content)
+
+# for setp in response.content:
+#     if setp.get("type") == "text":
+#         print(setp["text"])
         
-        for tool_call in gathered.tool_calls:
-            selected_tool = tool_dict[tool_call['name']]
-            tool_msg = selected_tool.invoke(tool_call) 
-            print(tool_msg)
+#
+# messages = [
+#     {"role": "user", "content": "오늘 고성 날씨는"}
+# ]
 
-            if tool_msg:
-                tool_call_id = tool_call.get('tool_call_id', None)
-                if tool_call_id:
-                    tool_messages.append(ToolMessage(content=tool_msg, tool_call_id=tool_call_id))
-                    print(tool_msg, type(tool_msg))
-                st.session_state.messages.append(ToolMessage(content=tool_msg, tool_call_id=tool_call_id))
-
-        for tool_msg in tool_messages:
-            yield tool_msg.content 
-
-        for chunk in get_ai_response(st.session_state.messages):
-            yield chunk
+# messages = [
+#     HumanMessage(content="2 더하기 4는 얼마야? 그리고 고성 날씨는?")
+# ]
 
 
-# Streamlit 앱
-st.title("💬 GPT-4o Langchain Chat")
-
-# 스트림릿 session_state에 메시지 저장
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [
-        SystemMessage("너는 사용자를 돕기 위해 최선을 다하는 인공지능 봇이다. "),  
-        AIMessage("How can I help you?")
-    ]
-
-# 스트림릿 화면에 메시지 출력
-for msg in st.session_state.messages:
-    if msg.content:
-        if isinstance(msg, SystemMessage):
-            st.chat_message("system").write(msg.content)
-        elif isinstance(msg, AIMessage):
-            st.chat_message("assistant").write(msg.content)
-        elif isinstance(msg, HumanMessage):
-            st.chat_message("user").write(msg.content)
-        elif isinstance(msg, ToolMessage):
-            st.chat_message("tool").write(msg.content)
-
-
-# 사용자 입력 처리
-if prompt := st.chat_input():
-    st.chat_message("user").write(prompt) # 사용자 메시지 출력
-    st.session_state.messages.append(HumanMessage(prompt)) # 사용자 메시지 저장
-
-    response = get_ai_response(st.session_state["messages"])
-    
-    result = st.chat_message("assistant").write_stream(response) # AI 메시지 출력
-    st.session_state["messages"].append(AIMessage(result)) # AI 메시지 저장    
+# response = agent.invoke({"messages":messages})
+# # pprint(response)
+# # pprint(response["messages"][1].content)
+# # pprint(response["messages"][2].content)
