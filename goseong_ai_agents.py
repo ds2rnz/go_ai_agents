@@ -49,9 +49,10 @@ llm_with_tools = llm.bind_tools(tools)
 def get_ai_response(messages):
     response = llm_with_tools.invoke(messages) 
     # 스트리밍 응답 처리
-    if isinstance(response, dict) and "text" in response:
-        st.chat_message("assistant").write(response["text"])
-    return response
+    for chunk in response.content:
+        if chunk.get("type") == "text":
+            st.chat_message("assistant").write_stream(chunk["text"])
+    return response          
 
 # --- Streamlit 앱 설정 ---
 st.set_page_config(page_title="AI Chat", page_icon="💬", layout="wide")
