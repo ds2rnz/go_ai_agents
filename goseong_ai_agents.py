@@ -93,7 +93,7 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
             # AI 메시지 추가 및 출력
             st.session_state.messages.append({"role": "assistant", "content": ai_response})
             st.chat_message("assistant").write(ai_response)
-            st.write(session_state.messages['messages'])
+            st.write(st.session_state.messages['messages'])
             
         except Exception as e:
             error_msg = f"오류가 발생했습니다: {str(e)}"
