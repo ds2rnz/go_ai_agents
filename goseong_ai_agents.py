@@ -63,7 +63,6 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "system", "content": "저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다."},
-        {"role": "user", "content": ""},
         {"role": "assistant", "content": "무엇이을 도와 드릴까요?"}
 ]
 
@@ -94,6 +93,7 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
             # AI 메시지 추가 및 출력
             st.session_state.messages.append({"role": "assistant", "content": ai_response})
             st.chat_message("assistant").write(ai_response)
+            st.write(messages)
             
         except Exception as e:
             error_msg = f"오류가 발생했습니다: {str(e)}"
