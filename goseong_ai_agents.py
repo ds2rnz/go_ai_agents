@@ -30,6 +30,7 @@ OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 ddg_search_tool = DuckDuckGoSearchRun()
 
 checkpointer = InMemorySaver()
+config = {"configurable": {"thread_id": "1"}}
 
 llm = init_chat_model(
     model = "openai:gpt-4o-mini",
@@ -79,7 +80,9 @@ for msg in messages:
 if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt)  # 사용자 메시지 출력
     messages.append(HumanMessage(prompt))  # 사용자 메시지 저장
-    response = agent.invoke({"messages":[{"role":"user", "content":prompt}]})  # AI 응답 처리
+    response = agent.invoke({"messages":[{"role":"user", "content":prompt}]}
+                               config=config,
+                               tool_choice='any' # 도구 사용 강제(일반 llm으로의 fallback 방지))  # AI 응답 처리
     messages.append(AIMessage(response['messages'][-1].content))  # AI 메시지 저장
     st.chat_message("assistant").write(response['messages'][-1].content)  # AI 응답 출력
     st.write(messages)
