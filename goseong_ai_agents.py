@@ -47,7 +47,7 @@ llm_with_tools = llm.bind_tools(tools)
 
 # 사용자의 메시지 처리하기 위한 함수
 def get_ai_response(messages):
-    response = llm_with_tools.invoke(messages) 
+    response = llm_with_tools.invoke(messages, tools=tools) 
     # 스트리밍 응답 처리
     if isinstance(response.content, str):
         # response.content가 리스트일 때 각 chunk를 처리
@@ -56,10 +56,10 @@ def get_ai_response(messages):
             if isinstance(chunk, dict):
                 # 'type' 키가 존재하고, 'text' 타입인 경우
                 if chunk.get("type") == "text":
-                    st.chat_message("assistant").write_stream(chunk["text"])
+                    
             else:
                 # 만약 chunk가 문자열이라면 그대로 출력
-                st.chat_message("assistant").write(chunk)
+                return reponse
     
     return response.content         
 
