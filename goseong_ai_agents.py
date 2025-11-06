@@ -50,7 +50,7 @@ def get_ai_response(messages):
     response = llm_with_tools.invoke(messages) 
     # 스트리밍 응답 처리
     if isinstance(response.content, str):
-        st.chat_message("assistant").write(response.content)
+
     else:
         # response.content가 리스트일 때 각 chunk를 처리
         for chunk in response.content:
