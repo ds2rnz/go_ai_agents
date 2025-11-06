@@ -49,10 +49,21 @@ llm_with_tools = llm.bind_tools(tools)
 def get_ai_response(messages):
     response = llm_with_tools.invoke(messages) 
     # 스트리밍 응답 처리
-    for chunk in response.content:
-        if chunk.get("type") == "text":
-            st.chat_message("assistant").write_stream(chunk["text"])
-    return response          
+    if isinstance(response.content, str):
+        st.chat_message("assistant").write(response.content)
+    else:
+        # response.content가 리스트일 때 각 chunk를 처리
+        for chunk in response.content:
+            # chunk가 딕셔너리일 경우에만 get() 사용
+            if isinstance(chunk, dict):
+                # 'type' 키가 존재하고, 'text' 타입인 경우
+                if chunk.get("type") == "text":
+                    st.chat_message("assistant").write_stream(chunk["text"])
+            else:
+                # 만약 chunk가 문자열이라면 그대로 출력
+                st.chat_message("assistant").write(chunk)
+    
+    return response.content         
 
 # --- Streamlit 앱 설정 ---
 st.set_page_config(page_title="AI Chat", page_icon="💬", layout="wide")
