@@ -77,7 +77,7 @@ llm_with_tools = llm.bind_tools(tools)
 
 
 # 사용자의 메시지 처리하기 위한 함수
-def get_ai_response(messages:str):
+def get_ai_response():
     response = llm_with_tools.invoke(messages, tools=tools) 
     
     for chunk in response.content:
@@ -182,7 +182,7 @@ for msg in messages:
 
 
 # 사용자 입력 처리
-if prompt := st.chat_input():
+if prompt := st.chat_input(placeholder = "무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt) # 사용자 메시지 출력
     messages.append(HumanMessage(prompt)) # 사용자 메시지 저장
 
