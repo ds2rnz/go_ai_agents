@@ -56,9 +56,9 @@ def get_ai_response(messages):
             if isinstance(chunk, dict):
                 # 'type' 키가 존재하고, 'text' 타입인 경우
                 if chunk.get("type") == "text":
-                   else:
+            else:
                 # 만약 chunk가 문자열이라면 그대로 출력
-                        return reponse
+                return reponse
     
     return response.content         
 
