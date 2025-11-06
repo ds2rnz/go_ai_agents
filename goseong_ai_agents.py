@@ -66,11 +66,11 @@ messages = [
 for msg in messages:
     if msg:
         if isinstance(msg, SystemMessage):
-            st.chat_message("system").write(SystemMessage(msg['messages'].content))
+            st.chat_message("system").write(SystemMessage(msg['messages'][-1].content))
         elif isinstance(msg, AIMessage):
-            st.chat_message("assistant").write(AIMessage(msg['messages'].content))
+            st.chat_message("assistant").write(AIMessage(msg['messages'][-1].content))
         elif isinstance(msg, HumanMessage):
-            st.chat_message("user").write(msg.content)
+            st.chat_message("user").write(HumanMessage(msg['messages'][-1].content))
 
 # 사용자 입력 처리
 if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
