@@ -8,6 +8,7 @@ from langchain.tools import tool
 from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
 from langchain.messages import HumanMessage, ToolMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, ToolMessage, SystemMessage, AIMessage
 
 # 커스텀 tool 생성
 @tool 
@@ -44,7 +45,7 @@ tools = model.bind_tools([calculator])
 opneai_tool = [{"type": "web_search"},]
 
 messages = [
-        {SystemMessage(content="너는 사용자를 돕기 위해 최선을 다하는 인공지능 봇이다. ")},  
+        SystemMessage(content="너는 사용자를 돕기 위해 최선을 다하는 인공지능 봇이다. "),  
         AIMessage(content="무엇이을 도와 드릴까요?"),
         HumanMessage(content=""),
     ]
