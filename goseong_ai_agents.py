@@ -79,3 +79,4 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
     response = agent.invoke({"messages":[{"role":"user", "content":prompt}]})  # AI 응답 처리
     messages.append(AIMessage(response['messages'][-1].content))  # AI 메시지 저장
     st.chat_message("assistant").write(response['messages'][-1].content)  # AI 응답 출력
+    st.write(messages)
