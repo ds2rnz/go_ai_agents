@@ -60,30 +60,42 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # 스트림릿 session_state에 메시지 저장
-messages = [
+if "messages" not in st.session_state:
+    st.session_state.messages.messages = [
         {"role": "system", "content": "저는 고성군청 직원을 위해 최선을 다하는 인공지능 도우미입니다."},
         {"role": "user", "content": ""},
         {"role": "assistant", "content": "무엇이을 도와 드릴까요?"}
 ]
 
 # 스트림릿 화면에 메시지 출력
-for msg in messages:
-    if msg:
-        if isinstance(msg, SystemMessage):
-            st.chat_message("system").write((msg.content))
-        elif isinstance(msg, AIMessage):
-            st.chat_message("assistant").write(msg['messages'][2].content)
-        elif isinstance(msg, HumanMessage):
-            st.chat_message("user").write(HumanMessage(msg['messages'][-1].content))
+for msg in st.session_state.messages:
+    role = msg["role"]
+    content = msg["content"]
+    st.chat_message(role).write(content)
 
 # 사용자 입력 처리
 if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
-    st.chat_message("user").write(prompt)  # 사용자 메시지 출력
-    messages.append(HumanMessage(prompt))  # 사용자 메시지 저장
-    response = agent.invoke({"messages":[{"role":"user", "content":prompt}]},
-                               config=config,
-                               tool_choice='any' # 도구 사용 강제(일반 llm으로의 fallback 방지)
-                           )  # AI 응답 처리
-    messages.append(AIMessage(response['messages'][-1].content))  # AI 메시지 저장
-    st.chat_message("assistant").write(response['messages'][-1].content)  # AI 응답 출력
-    st.write(messages)
+    # 사용자 메시지 추가 및 출력
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+    
+    # AI 응답 처리
+    with st.spinner("답변 생성 중..."):
+        try:
+            response = agent.invoke(
+                {"messages": [{"role": "user", "content": prompt}]},
+                config=config,
+                tool_choice='any'  # 도구 사용 강제
+            )
+            
+            # 응답에서 마지막 AI 메시지 추출
+            ai_response = response['messages'][-1].content
+            
+            # AI 메시지 추가 및 출력
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            st.chat_message("assistant").write(ai_response)
+            
+        except Exception as e:
+            error_msg = f"오류가 발생했습니다: {str(e)}"
+            st.session_state.messages.append({"role": "assistant", "content": error_msg})
+            st.chat_message("assistant").write(error_msg)
