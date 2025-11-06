@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
-from langchain_core.tools import tool
+from langchain.tools import tool
 from datetime import datetime
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
