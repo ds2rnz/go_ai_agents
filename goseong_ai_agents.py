@@ -186,7 +186,7 @@ if prompt := st.chat_input():
     st.chat_message("user").write(prompt) # 사용자 메시지 출력
     messages.append(HumanMessage(prompt)) # 사용자 메시지 저장
 
-    response = get_ai_response(messages(HumanMessage.content))
+    response = get_ai_response(messages)
     
     result = response # AI 메시지 출력
     messages.append(AIMessage(result)) # AI 메시지 저장    
