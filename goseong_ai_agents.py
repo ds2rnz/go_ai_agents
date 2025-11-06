@@ -45,11 +45,10 @@ tools = model.bind_tools([calculator])
 opneai_tool = [{"type": "web_search"},]
 
 messages = [
-        SystemMessage(content="너는 사용자를 돕기 위해 최선을 다하는 인공지능 봇이다. "),  
-        AIMessage(content="무엇이을 도와 드릴까요?"),
-        HumanMessage(content=""),
-    ]
-
+        {"role": "system", "content": "너는 사용자를 돕기 위해 최선을 다하는 인공지능 봇이다. "},
+        {"role": "user", "content": ""},
+        {"role": "assistant", "content": "무엇이을 도와 드릴까요?"}
+        ]
 
 
 response1 = agent.invoke({"messages":[{"role":"user", "content":"올해 11월 한국에서 개봉하는 영화는? 그리고 11 더하기 15는 얼마야?"}]})
