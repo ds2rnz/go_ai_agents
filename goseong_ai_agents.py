@@ -11,6 +11,7 @@ from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from dotenv import load_dotenv
 import os
 from langchain.messages import HumanMessage, ToolMessage, SystemMessage, AIMessage
+from langgraph.checkpoint.memory import InMemorySaver
 
 @tool
 def get_current_time(timezone: str, location: str) -> str:
@@ -28,6 +29,8 @@ OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 
 ddg_search_tool = DuckDuckGoSearchRun()
 
+checkpointer = InMemorySaver()
+
 llm = init_chat_model(
     model = "openai:gpt-4o-mini",
     temperature=0.5, 
@@ -40,8 +43,8 @@ agent = create_agent(
     model=llm,
     tools=[get_current_time, ddg_search_tool],
     middleware=[],
+    checkpointer=checkpointer,
 )
-
 
 
 # --- Streamlit 앱 설정 ---
@@ -66,9 +69,9 @@ messages = [
 for msg in messages:
     if msg:
         if isinstance(msg, SystemMessage):
-            st.chat_message("system").write(SystemMessage(msg.content))
+            st.chat_message("system").write((msg.content))
         elif isinstance(msg, AIMessage):
-            st.chat_message("assistant").write(AIMessage(msg.content))
+            st.chat_message("assistant").write(msg['messages'][2].content)
         elif isinstance(msg, HumanMessage):
             st.chat_message("user").write(HumanMessage(msg['messages'][-1].content))
 
