@@ -23,6 +23,7 @@ llm = ChatOpenAI(
 # 도구 함수 정의
 @tool
 def get_current_time(timezone: str, location: str) -> str:
+    '''  해당 지역 현재시각을 구하는 함수 '''
     try:
         tz = pytz.timezone(timezone)
         now = datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
@@ -33,6 +34,7 @@ def get_current_time(timezone: str, location: str) -> str:
     
 @tool
 def get_web_search(query: str, search_period: str) -> str:
+    ''' 덕덕고를 이용하여 웹 검색하는 함수 '''
     wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time=search_period)
     search = DuckDuckGoSearchResults(api_wrapper=wrapper, results_separator=';\n')
     docs = search.invoke(query)
@@ -45,7 +47,7 @@ llm_with_tools = llm.bind_tools()
 
 # 사용자의 메시지 처리하기 위한 함수
 def get_ai_response(messages):
-    response = llm_with_tools.invoke(messages, tools=tool_dict) 
+    response = llm_with_tools.invoke(messages, tools=tools) 
     # 스트리밍 응답 처리
     if isinstance(response, dict) and "text" in response:
         st.chat_message("assistant").write(response["text"])
