@@ -61,6 +61,6 @@ for setp in response.content:
         st.chat_message("assistant").write(setp["text"])
 
 
-messages.append(AIMessage(setp))
+messages.append(AIMessage(response.content))
 
 st.write(messages)
