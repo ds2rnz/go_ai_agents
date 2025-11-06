@@ -43,33 +43,24 @@ model = ChatOpenAI(
 tools = model.bind_tools([calculator])
 opneai_tool = [{"type": "web_search"},]
 
-response = model.invoke("올해 11월 한국에서 개봉하는 영화는? 그리고 11 더기기 15는 얼마야?"
+messages = [
+        SystemMessage("너는 사용자를 돕기 위해 최선을 다하는 인공지능 봇이다. "),  
+        AIMessage("무엇이을 도와 드릴까요?"),
+        HumanMessage("")
+    ]
+
+
+response = model.invoke("올해 1월 한국에서 개봉하는 영화는? 그리고 1 더하기 5는 얼마야?"
         , tools=opneai_tool )
 # pprint(response.content)
+
+
+
 for setp in response.content:
     if setp.get("type") == "text":
         st.chat_message("assistant").write(setp["text"])
-        
 
 
-response1 = agent.invoke({"messages":[{"role":"user", "content":"올해 11월 한국에서 개봉하는 영화는? 그리고 11 더기기 15는 얼마야?"}]})
-st.chat_message("assistant").write(response1['messages'][-1].content)
+messages.append(setp)
 
-# for setp in response.content:
-#     if setp.get("type") == "text":
-#         print(setp["text"])
-        
-#
-# messages = [
-#     {"role": "user", "content": "오늘 고성 날씨는"}
-# ]
-
-# messages = [
-#     HumanMessage(content="2 더하기 4는 얼마야? 그리고 고성 날씨는?")
-# ]
-
-
-# response = agent.invoke({"messages":messages})
-# # pprint(response)
-# # pprint(response["messages"][1].content)
-# # pprint(response["messages"][2].content)
+st.write(messages)
