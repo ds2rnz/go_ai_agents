@@ -66,7 +66,7 @@ def get_ai_response(messages):
             result.append(chunk)
     
     # 리스트로 모은 결과를 하나의 문자열로 합침
-    return "\n".join(result)   
+    return result   
 
 # --- Streamlit 앱 설정 ---
 st.set_page_config(page_title="AI Chat", page_icon="💬", layout="wide")
