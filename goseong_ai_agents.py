@@ -39,16 +39,13 @@ def get_web_search(query: str, search_period: str) -> str:
     return docs
 
 tools = [get_current_time, get_web_search]
-tool_dict = {
-    "get_current_time": get_current_time, 
-    "get_web_search": get_web_search
-}
+tool_dict = [{"type": "web_search"},]
 
-llm_with_tools = llm.bind_tools(tools)
+llm_with_tools = llm.bind_tools()
 
 # 사용자의 메시지 처리하기 위한 함수
 def get_ai_response(messages):
-    response = llm_with_tools.invoke(messages, tools=tools) 
+    response = llm_with_tools.invoke(messages, tools=tool_dict) 
     # 스트리밍 응답 처리
     if isinstance(response, dict) and "text" in response:
         st.chat_message("assistant").write(response["text"])
