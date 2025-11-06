@@ -97,6 +97,5 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
     st.chat_message("user").write(prompt)  # 사용자 메시지 출력
     messages.append(HumanMessage(prompt))  # 사용자 메시지 저장
     response = get_ai_response(messages)  # AI 응답 처리
-    result = response.get("text", "응답을 받지 못했습니다.")  # 응답 텍스트 추출
     messages.append(AIMessage(result))  # AI 메시지 저장
     st.chat_message("assistant").write(result)  # AI 응답 출력
