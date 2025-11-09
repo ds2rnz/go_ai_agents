@@ -268,7 +268,7 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
         # 벡터스토어 기반 답변
         with st.spinner("📚 학습된 문서를 검색하는 중..."):
             answer = answer_question(prompt)
-            st.write(answer)
+            st.write(st.session_stae.messages)
 
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer and len(answer) < 20:
