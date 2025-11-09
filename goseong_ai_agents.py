@@ -186,8 +186,8 @@ config = {"configurable": {"thread_id": "1"}}
 
 llm = init_chat_model(
     model = "openai:gpt-4o-mini",
-    temperature=0.7, 
-    max_tokens=1000, 
+    temperature=0.5, 
+    max_tokens=2000, 
     timeout=10, 
     max_retries=2, 
     )
