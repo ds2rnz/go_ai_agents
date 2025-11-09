@@ -268,7 +268,6 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
         # 벡터스토어 기반 답변
         with st.spinner("📚 학습된 문서를 검색하는 중..."):
             answer = answer_question(prompt)
-            st.write(st.session_state.messages)
 
         # 관련 문서가 없는 경우 일반 모드로 전환
         if answer and "죄송합니다. " in answer or len(answer) < 30:
@@ -321,24 +320,3 @@ if process1:
     st.session_state["vectorstore"] = process1_f(uploaded_files1)
 
     
-    # # AI 응답 처리
-    # with st.spinner("답변 생성 중..."):
-    #     try:
-    #         response = agent.invoke(
-    #           {"messages": st.session_state.messages},
-    #             config=config,
-    #             tool_choice='any'  # 도구 사용 강제
-    #         )
-            
-    #         # 응답에서 마지막 AI 메시지 추출
-    #         ai_response = response['messages'][-1].content
-            
-    #         # AI 메시지 추가 및 출력
-    #         st.session_state.messages.append({"role": "assistant", "content": ai_response})
-    #         st.chat_message("assistant").write(ai_response)
-    #         st.write(st.session_state.messages)
-            
-    #     except Exception as e:
-    #         error_msg = f"오류가 발생했습니다: {str(e)}"
-    #         st.session_state.messages.append({"role": "assistant", "content": error_msg})
-    #         st.chat_message("assistant").write(error_msg)
