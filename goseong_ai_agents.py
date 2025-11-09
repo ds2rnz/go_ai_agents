@@ -291,7 +291,30 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
                     error_msg = f"오류가 발생했습니다: {str(e)}"
                     st.session_state.messages.append({"role": "assistant", "content": error_msg})
                     st.chat_message("assistant").write(error_msg)
-
+        else:
+            # 문서 기반 답변
+            ai_response = answer['messages'][-1].content
+            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+            st.chat_message("assistant").write(ai_response)
+    else:
+        # 일반 AI 모드
+        st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
+        with st.spinner("답변 생성 중..."):
+            try:
+                response = agent.invoke(
+                {"messages": st.session_state.messages},
+                    config=config,
+                    tool_choice='any'  # 도구 사용 강제
+                )
+                ai_response = response['messages'][-1].content
+                
+                # AI 메시지 추가 및 출력
+                st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                st.chat_message("assistant").write(ai_response)
+            except Exception as e:
+                error_msg = f"오류가 발생했습니다: {str(e)}"
+                st.session_state.messages.append({"role": "assistant", "content": error_msg})
+                st.chat_message("assistant").write(error_msg)
 
 # 문서 학습 함수 불러오기
 if process1:
