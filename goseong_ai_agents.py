@@ -36,7 +36,7 @@ def get_current_time(timezone: str, location: str) -> str:
         return f"알 수 없는 타임존: {timezone}"  
     
 
-def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
+def load_vectorstore(embedding, persist_directory="C:\\faiss_store"):
     
     # 저장 디렉토리가 존재하는지 확인
     if not os.path.isdir(persist_directory):
