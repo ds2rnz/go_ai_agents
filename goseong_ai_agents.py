@@ -51,6 +51,7 @@ def search_searx(query) -> str:
     
     try:
         response = requests.get(searx_url, params=params)
+        st.write(response)
         response.raise_for_status()  # 응답이 성공적이지 않으면 예외 발생
         return response.json()  # JSON 형식으로 응답 반환
     except requests.exceptions.RequestException as e:
