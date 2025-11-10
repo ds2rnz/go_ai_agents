@@ -38,7 +38,7 @@ def get_current_time(timezone: str, location: str) -> str:
         return f"알 수 없는 타임존: {timezone}"  
     
 @tool
-def search_searx(query) -> str:
+def search_searx(st.session_state.messages) -> str:
     ''' searx를 활용한 인터넷 검색 툴'''
     # Searx 인스턴스 URL
     searx_url = "https://searx.org/search"  # 공개된 Searx 인스턴스 URL
