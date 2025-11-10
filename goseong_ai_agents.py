@@ -36,7 +36,7 @@ def get_current_time(timezone: str, location: str) -> str:
         return f"알 수 없는 타임존: {timezone}"  
     
 
-def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
+def load_vectorstore(embedding, persist_directory="C:/"):
     
     # 저장 디렉토리가 존재하는지 확인
     if not os.path.isdir(persist_directory):
@@ -181,7 +181,7 @@ def process1_f(uploaded_files1):
             )
             
             # 저장 디렉토리 설정
-            persist_directory = "C:/faiss_store"
+            persist_directory = "C:/"
             try:
                 os.makedirs(persist_directory, exist_ok=True)
                 st.info(f"📂 디렉토리 '{persist_directory}' 생성 완료!")
@@ -322,7 +322,7 @@ for msg in st.session_state.messages:
 
 vectorstore = load_vectorstore(
     embedding=embedding,
-    persist_directory="C:/faiss_store"
+    persist_directory="C:/"
 )
 
 # 학습 data가 없으면 초기화
