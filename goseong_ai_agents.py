@@ -37,13 +37,12 @@ def get_current_time(timezone: str, location: str) -> str:
     except pytz.UnknownTimeZoneError:
         return f"알 수 없는 타임존: {timezone}"  
     
-@tool
-def search_searx(st.session_state.messages) -> str:
+def search_searx(messages) -> str:
     ''' searx를 활용한 인터넷 검색 툴'''
     # Searx 인스턴스 URL
     searx_url = "https://searx.org/search"  # 공개된 Searx 인스턴스 URL
     params = {
-        'q': query,           # 검색할 쿼리
+        'q': messages,           # 검색할 쿼리
         'format': 'json',     # 결과 형식을 JSON으로 지정
         'engines': 'google,duckduckgo,bing', # 구체적으로 검색할 엔진을 지정 (optional, 여러 엔진을 콤마로 구분 가능)
         'category': 'general' # 검색 카테고리 (optional)
