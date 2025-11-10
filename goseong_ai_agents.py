@@ -36,12 +36,12 @@ def get_current_time(timezone: str, location: str) -> str:
         return f"알 수 없는 타임존: {timezone}"  
     
 
-def load_vectorstore(embedding, persist_directory="C:\\faiss_store"):
+def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
     
     # 저장 디렉토리가 존재하는지 확인
-    # if not os.path.isdir(persist_directory):
-    #    st.error(f"🚨 지정된 디렉토리 '{persist_directory}'가 존재하지 않습니다.")
-    #    return None
+    if not os.path.isdir(persist_directory):
+        st.error(f"🚨 지정된 디렉토리 '{persist_directory}'가 존재하지 않습니다.")
+        return None
         # index.faiss 파일이 존재하는지 확인
     index_file = os.path.join(persist_directory, "index.faiss")
     pkl_file = os.path.join(persist_directory, "index.pkl")
@@ -182,7 +182,12 @@ def process1_f(uploaded_files1):
             
             # 저장 디렉토리 설정
             persist_directory = "C:/faiss_store"
-            os.makedirs(persist_directory, exist_ok=True)
+            try:
+                os.makedirs(persist_directory, exist_ok=True)
+                st.info(f"📂 디렉토리 '{persist_directory}' 생성 완료!")
+            except Exception as e:
+                st.error(f"❌ 디렉토리 생성 실패: {e}")
+                return None
 
             # 배치 단위 임베딩
             batch_size = 20
@@ -220,7 +225,13 @@ def process1_f(uploaded_files1):
             
             st.success("🎉 학습이 완료되었습니다!")
             st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
+            if os.path.isdir(persist_directory):
+                st.info(f"디렉토리 '{persist_directory}'가 정상적으로 생성되었습니다.")
+            else:
+                st.error(f"❌ '{persist_directory}' 디렉토리가 생성되지 않았습니다.")
+            
             return vectorstore
+           
             
     except Exception as e:
         st.error(f"❌ 학습 중 오류 발생: {e}")
@@ -311,7 +322,7 @@ for msg in st.session_state.messages:
 
 vectorstore = load_vectorstore(
     embedding=embedding,
-    persist_directory="C:\\faiss_store"
+    persist_directory="C:/faiss_store"
 )
 
 # 학습 data가 없으면 초기화
