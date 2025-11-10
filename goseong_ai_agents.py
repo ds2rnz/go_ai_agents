@@ -311,7 +311,7 @@ for msg in st.session_state.messages:
 
 vectorstore = load_vectorstore(
     embedding=embedding,
-    persist_directory="C:/faiss_store"
+    persist_directory="C:\\faiss_store"
 )
 
 # 학습 data가 없으면 초기화
