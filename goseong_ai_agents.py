@@ -274,6 +274,7 @@ agent = create_agent(
     model=llm,
     tools=[get_current_time, ddg_search_tool],
     middleware=[],
+    system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주세요", 
     checkpointer=checkpointer,
     )
 
