@@ -5,7 +5,7 @@ python-dotenv==1.1.1
 # LangChain
 langchain==1.0.2
 langchain-community==0.4.1
-langchain-core==1.0.0
+langchain-core==1.0.4
 langchain-openai==1.0.1
 langchain-classic==1.0.0
 langchain-text-splitters==1.0.0
@@ -31,4 +31,5 @@ langgraph==1.0.1
 # Utils
 
 pandas==2.3.3
+
 
