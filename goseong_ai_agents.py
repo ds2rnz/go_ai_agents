@@ -123,9 +123,9 @@ def answer_question(query: str):
         return f"오류가 발생했습니다: {e}"
                 
 
-def ai_answer():
+def ai_answer(messages):
     response = agent.invoke(
-    {"messages": st.session_state.messages},
+    {"messages": messages},
         config=config,
         tool_choice='any'  # 도구 사용 강제
     )
