@@ -284,7 +284,29 @@ agent = create_agent(
 
 # --- Streamlit 앱 설정 ---
 st.set_page_config(page_title="GPT 기반 AI 도우미", page_icon="💬", layout="wide")
-st.title("💬 고성군청 AI 도우미")
+# st.title("💬 고성군청 AI 도우미")
+st.markdown("""
+    <style>
+        .centered-title {
+            text-align: center;
+            font-size: 3rem;
+            color: #1e293b;
+            margin-top: 0px;  /* 위쪽 마진 */
+            margin-bottom: 3px;  /* 아래쪽 마진 */
+            margin-left: 0px;  /* 왼쪽 마진 */
+            margin-right: 0px;  /* 오른쪽 마진 */
+        }
+        .ai-text {
+            font-size: 3.5rem; /* AI 글자 크기 */
+            color: #2563eb;
+            margin-left: 10px; /* AI 단어 왼쪽에 여백 추가 */
+            margin-right: 10px; /* AI 단어 오른쪽 여백 추가 */
+        }
+    </style> 
+    <h1 style="text-align: center; font-size: 3rem; color: #1e293b;">
+    💬 고성군청 <span class="ai-text">AI</span> 도우미 </h>
+                                
+""", unsafe_allow_html=True)
 
 # --- 화면 디자인 ---
 st.markdown("""
