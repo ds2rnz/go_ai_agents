@@ -225,8 +225,8 @@ def process1_f(uploaded_files1):
 
 
 load_dotenv()
-# OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ddg_search_tool = DuckDuckGoSearchRun()
 
 checkpointer = InMemorySaver()
