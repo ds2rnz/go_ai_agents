@@ -5,6 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain.agents import create_agent
 from datetime import datetime
 from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+from langchain_community.tools.searx_search import SearxSearchResults
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
@@ -159,6 +160,17 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ddg_search_tool = DuckDuckGoSearchRun()
 
+search_searx = SearxSearchResults()
+
+# LangChain Tool 객체로 래핑
+searx_tool = [
+    Tool(
+        name="Searx Search",
+        func=search_searx.run,
+        description="Searx를 활용한 웹검색."
+    )
+]
+
 checkpointer = InMemorySaver()
 config = {"configurable": {"thread_id": "1"}}
 
@@ -178,7 +190,7 @@ embedding = OpenAIEmbeddings(
 
 agent = create_agent(
     model=llm,
-    tools=[get_current_time, search_searx],
+    tools=[get_current_time, ddg_search_tool, searx_tool],
     middleware=[],
     checkpointer=checkpointer,
     )
