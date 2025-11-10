@@ -9,6 +9,7 @@ import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from dotenv import load_dotenv
+import os
 from langchain.messages import HumanMessage, ToolMessage, SystemMessage, AIMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -18,7 +19,6 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
 from pathlib import Path
-import os
 import tempfile
 import traceback
 import time
@@ -49,13 +49,13 @@ def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
 
     if os.path.exists(index_file) and os.path.exists(pkl_file):
         try:
-            st.info("📂 기존 학습한 자료를 불러오는 중...")
+            st.spinner("📂 기존 학습한 자료를 불러오는 중...")
             vectorstore = FAISS.load_local(
                 persist_directory, 
                 embedding,
                 allow_dangerous_deserialization=True  # 필요한 경우
             )
-            st.success("✅ 기존 학습자료를 성공적으로 불러왔습니다!")
+            # st.success("✅ 기존 학습자료를 성공적으로 불러왔습니다!")
             st.toast("기존 학습 데이터를 사용합니다!", icon="📚")
             return vectorstore
         except Exception as e:
@@ -122,6 +122,15 @@ def answer_question(query: str):
         st.code(traceback.format_exc(), language="python")
         return f"오류가 발생했습니다: {e}"
                 
+
+def ai_answer():
+    response = agent.invoke(
+    {"messages": st.session_state.messages},
+        config=config,
+        tool_choice='any'  # 도구 사용 강제
+    )
+    return response['messages'][-1].content
+
 
 
 def process1_f(uploaded_files1):
@@ -240,8 +249,8 @@ def process1_f(uploaded_files1):
 
 
 load_dotenv()
-OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ddg_search_tool = DuckDuckGoSearchRun()
 
 checkpointer = InMemorySaver()
@@ -349,14 +358,16 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
             # st.write([type(m) for m in "messages"])    
             with st.spinner("답변 생성 중..."):
                 try:
-                    response = agent.invoke(
-                    {"messages": st.session_state.messages},
-                        config=config,
-                        tool_choice='any'  # 도구 사용 강제
-                    )
+                    response = ai_answer(st.session_state.messages)
+                    # response = agent.invoke(
+                    # {"messages": st.session_state.messages},
+                    #     config=config,
+                    #     tool_choice='any'  # 도구 사용 강제
+                    # )
                     
                     # 응답에서 마지막 AI 메시지 추출
                     ai_response = response['messages'][-1].content
+                    st.toast("일반 AI 모드로 답변합니다....!", icon="🎉")
                     
                     # AI 메시지 추가 및 출력
                     st.session_state.messages.append({"role": "assistant", "content": ai_response})
@@ -371,15 +382,19 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
             st.chat_message("assistant").write(answer)
     else:
         # 일반 AI 모드
-        st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
+        # st.info("🤖 일반 AI 모드로 답변합니다. 문서를 학습하면 더 정확한 답변을 받을 수 있습니다.")
         with st.spinner("답변 생성 중..."):
             try:
-                response = agent.invoke(
-                {"messages": st.session_state.messages},
-                    config=config,
-                    tool_choice='any'  # 도구 사용 강제
-                )
+                response = ai_answer(st.session_state.messages)
+                # response = agent.invoke(
+                # {"messages": st.session_state.messages},
+                #     config=config,
+                #     tool_choice='any'  # 도구 사용 강제
+                # )
+                
+                # 응답에서 마지막 AI 메시지 추출
                 ai_response = response['messages'][-1].content
+                st.toast("일반 AI 모드로 답변합니다....!", icon="🎉")
                 
                 # AI 메시지 추가 및 출력
                 st.session_state.messages.append({"role": "assistant", "content": ai_response})
