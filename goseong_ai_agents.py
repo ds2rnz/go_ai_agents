@@ -9,7 +9,6 @@ import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
 from dotenv import load_dotenv
-import os
 from langchain.messages import HumanMessage, ToolMessage, SystemMessage, AIMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_text_splitters import RecursiveCharacterTextSplitter
