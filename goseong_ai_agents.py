@@ -5,7 +5,6 @@ from langchain.chat_models import init_chat_model
 from langchain.agents import create_agent
 from datetime import datetime
 from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
-from langchain_community.tools.searx_search import SearxSearchResults
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
@@ -23,8 +22,6 @@ from pathlib import Path
 import tempfile
 import traceback
 import time
-import requests
-
 
 
 @tool
@@ -38,26 +35,6 @@ def get_current_time(timezone: str, location: str) -> str:
     except pytz.UnknownTimeZoneError:
         return f"알 수 없는 타임존: {timezone}"  
     
-def search_searx(messages) -> str:
-    ''' searx를 활용한 인터넷 검색 툴'''
-    # Searx 인스턴스 URL
-    searx_url = "https://searx.org/search"  # 공개된 Searx 인스턴스 URL
-    params = {
-        'q': messages,           # 검색할 쿼리
-        'format': 'json',     # 결과 형식을 JSON으로 지정
-        'engines': 'google,duckduckgo,bing', # 구체적으로 검색할 엔진을 지정 (optional, 여러 엔진을 콤마로 구분 가능)
-        'category': 'general' # 검색 카테고리 (optional)
-    }
-    
-    try:
-        response = requests.get(searx_url, params=params)
-        st.write(response)
-        response.raise_for_status()  # 응답이 성공적이지 않으면 예외 발생
-        return response.json()  # JSON 형식으로 응답 반환
-    except requests.exceptions.RequestException as e:
-        print(f"검색 요청 실패: {e}")
-        return None
-
 
 def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
     
@@ -155,21 +132,126 @@ def ai_answer(messages):
     return response
 
 
+
+def process1_f(uploaded_files1):
+    """PDF 파일을 학습하여 벡터스토어 생성"""
+    
+    # 파일 개수 체크
+    if uploaded_files1 and len(uploaded_files1) > 3:
+        st.error("❌ PDF는 최대 3개까지 업로드 가능합니다!")
+        st.warning("⚠️ PDF파일을 3개만 선택하여 주세요!")
+        return None  # 여기서 바로 return
+    
+    # 파일이 없는 경우
+    if not uploaded_files1:
+        st.warning("⚠️ PDF 파일을 업로드해주세요.")
+        return None
+
+    try:
+        with st.spinner("📚 PDF 임베딩 및 벡터스토어 생성 중... 잠시만 기다려주세요"):
+            all_splits = []
+            
+            # 각 PDF 파일 처리
+            for idx, uploaded_file in enumerate(uploaded_files1, 1):
+                st.write(f"📄 {idx}/{len(uploaded_files1)} 파일 처리 중: {uploaded_file.name}")
+                
+                # 임시 파일 생성
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                    tmp_file.write(uploaded_file.read())
+                    tmp_path = tmp_file.name
+
+                try:
+                    # PDF 로드
+                    loader = PyPDFLoader(tmp_path)
+                    data = loader.load()
+                    
+                    # 청킹
+                    splitter = RecursiveCharacterTextSplitter(
+                        chunk_size=300, 
+                        chunk_overlap=50
+                    )
+                    splits = splitter.split_documents(data)
+                    all_splits.extend(splits)
+                    
+                    st.success(f"✅ {uploaded_file.name}: {len(splits)}개 문서로 분할")
+                    
+                finally:
+                    # 임시 파일 삭제
+                    if os.path.exists(tmp_path):
+                        os.remove(tmp_path)
+
+            # 총 청크 수 표시
+            st.info(f"📊 총 문서 분할 수: {len(all_splits)}")
+
+            # Embedding 생성
+            embedding = OpenAIEmbeddings(
+                model="text-embedding-3-large", 
+                api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+            )
+            
+            # 저장 디렉토리 설정
+            persist_directory = "C:/faiss_store"
+            try:
+                os.makedirs(persist_directory, exist_ok=True)
+                st.info(f"📂 디렉토리 '{persist_directory}' 생성 완료!")
+            except Exception as e:
+                st.error(f"❌ 디렉토리 생성 실패: {e}")
+                return None
+
+            # 배치 단위 임베딩
+            batch_size = 20
+            vectorstore = None
+            total_batches = (len(all_splits) + batch_size - 1) // batch_size
+            
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            for i in range(0, len(all_splits), batch_size):
+                batch = all_splits[i:i+batch_size]
+                batch_num = i//batch_size + 1
+                
+                status_text.text(f"🔄 배치 {batch_num}/{total_batches} 학습자료 저장 중...")
+                progress_bar.progress(batch_num / total_batches)
+                
+                try:
+                    if vectorstore is None:
+                        # 첫 배치로 vectorstore 생성
+                        vectorstore = FAISS.from_documents(batch, embedding)
+                    else:
+                        # 기존 vectorstore에 추가
+                        vectorstore.add_documents(batch)
+                    
+                    # 로컬에 저장
+                    vectorstore.save_local(persist_directory)
+                    time.sleep(1.5)  # API 레이트 리밋 방지
+                    
+                except Exception as e:
+                    st.error(f"❌ 배치 {batch_num} 학습자료 저장 실패: {e}")
+                    continue
+
+            progress_bar.progress(1.0)
+            status_text.text("✅ 학습자료 저장 완료!")
+            
+            st.success("🎉 학습이 완료되었습니다!")
+            st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
+            if os.path.isdir(persist_directory):
+                st.info(f"디렉토리 '{persist_directory}'가 정상적으로 생성되었습니다.")
+            else:
+                st.error(f"❌ '{persist_directory}' 디렉토리가 생성되지 않았습니다.")
+            
+            return vectorstore
+           
+            
+    except Exception as e:
+        st.error(f"❌ 학습 중 오류 발생: {e}")
+        st.code(traceback.format_exc(), language="python")
+        return None
+
+
 load_dotenv()
 # OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ddg_search_tool = DuckDuckGoSearchRun()
-
-search_searx = SearxSearchResults()
-
-# LangChain Tool 객체로 래핑
-searx_tool = [
-    Tool(
-        name="Searx Search",
-        func=search_searx.run,
-        description="Searx를 활용한 웹검색."
-    )
-]
 
 checkpointer = InMemorySaver()
 config = {"configurable": {"thread_id": "1"}}
@@ -190,8 +272,9 @@ embedding = OpenAIEmbeddings(
 
 agent = create_agent(
     model=llm,
-    tools=[get_current_time, ddg_search_tool, searx_tool],
+    tools=[get_current_time, ddg_search_tool],
     middleware=[],
+    system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주세요", 
     checkpointer=checkpointer,
     )
 
@@ -200,8 +283,30 @@ agent = create_agent(
 
 
 # --- Streamlit 앱 설정 ---
-st.set_page_config(page_title="GPT AI 도우미", page_icon="💬", layout="wide")
-st.title("💬 고성군청 AI 도우미")
+st.set_page_config(page_title="GPT 기반 AI 도우미", page_icon="💬", layout="wide")
+# st.title("💬 고성군청 AI 도우미")
+st.markdown("""
+    <style>
+        .centered-title {
+            text-align: center;
+            font-size: 3rem;
+            color: #1e293b;
+            margin-top: 0px;  /* 위쪽 마진 */
+            margin-bottom: 3px;  /* 아래쪽 마진 */
+            margin-left: 0px;  /* 왼쪽 마진 */
+            margin-right: 0px;  /* 오른쪽 마진 */
+        }
+        .ai-text {
+            font-size: 3.5rem; /* AI 글자 크기 */
+            color: #2563eb;
+            margin-left: 10px; /* AI 단어 왼쪽에 여백 추가 */
+            margin-right: 10px; /* AI 단어 오른쪽 여백 추가 */
+        }
+    </style> 
+    <h1 style="text-align: center; font-size: 3rem; color: #1e293b;">
+    💬 고성군청 <span class="ai-text">AI</span> 도우미 </h>
+                                
+""", unsafe_allow_html=True)
 
 # --- 화면 디자인 ---
 st.markdown("""
@@ -317,6 +422,7 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
                 st.chat_message("assistant").write(error_msg)
 
 # 문서 학습 함수 불러오기
-
+if process1:
+    st.session_state["vectorstore"] = process1_f(uploaded_files1)
 
     
