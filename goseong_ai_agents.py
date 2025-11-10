@@ -359,13 +359,6 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
             with st.spinner("답변 생성 중..."):
                 try:
                     response = ai_answer(st.session_state.messages)
-                    # response = agent.invoke(
-                    # {"messages": st.session_state.messages},
-                    #     config=config,
-                    #     tool_choice='any'  # 도구 사용 강제
-                    # )
-                    
-                    # 응답에서 마지막 AI 메시지 추출
                     ai_response = response['messages'][-1].content
                     st.toast("일반 AI 모드로 답변합니다....!", icon="🎉")
                     
@@ -386,13 +379,6 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
         with st.spinner("답변 생성 중..."):
             try:
                 response = ai_answer(st.session_state.messages)
-                # response = agent.invoke(
-                # {"messages": st.session_state.messages},
-                #     config=config,
-                #     tool_choice='any'  # 도구 사용 강제
-                # )
-                
-                # 응답에서 마지막 AI 메시지 추출
                 ai_response = response['messages'][-1].content
                 st.toast("일반 AI 모드로 답변합니다....!", icon="🎉")
                 
