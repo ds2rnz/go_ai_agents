@@ -129,7 +129,7 @@ def ai_answer(messages):
         config=config,
         tool_choice='any'  # 도구 사용 강제
     )
-    return response['messages'][-1].content
+    return response
 
 
 
