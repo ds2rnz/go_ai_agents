@@ -282,7 +282,7 @@ agent = create_agent(
 
 
 # --- Streamlit 앱 설정 ---
-st.set_page_config(page_title="GPT AI 도우미", page_icon="💬", layout="wide")
+st.set_page_config(page_title="GPT 기반 AI 도우미", page_icon="💬", layout="wide")
 st.title("💬 고성군청 AI 도우미")
 
 # --- 화면 디자인 ---
