@@ -43,7 +43,7 @@ def load_or_create_vectorstore(embedding, persist_directory="c:/faiss_store"):
         # index.faiss 파일이 존재하는지 확인
         index_file = os.path.join(persist_directory, "index.faiss")
         pkl_file = os.path.join(persist_directory, "index.pkl")
-        
+        st.write(pkl_file)
         if os.path.exists(index_file) and os.path.exists(pkl_file):
             try:
                 st.info("📂 기존 학습한 자료를 불러오는 중...")
