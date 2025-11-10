@@ -178,7 +178,7 @@ embedding = OpenAIEmbeddings(
 
 agent = create_agent(
     model=llm,
-    tools=[get_current_time, ddg_search_tool, search_searx],
+    tools=[get_current_time, search_searx],
     middleware=[],
     checkpointer=checkpointer,
     )
