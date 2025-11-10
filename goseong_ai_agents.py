@@ -313,6 +313,14 @@ with st.sidebar:
         
     st.markdown("---")
 
+    # 하단 정보 
+    st.markdown("""
+        <div style="text-align: center; padding: 1rem; color: #000000; font-size: 0.9rem;">
+            <p style="margin: 0;">Made by 🔍 총무행정관 정보관리팀</p>
+            <p style="margin: 0.5rem 0 0 0;">v1.0.0 | 2025</p>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 
 
