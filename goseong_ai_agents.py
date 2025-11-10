@@ -18,6 +18,7 @@ from langchain_classic.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
+from pathlib import Path
 import os
 import tempfile
 import traceback
