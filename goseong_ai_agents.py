@@ -17,6 +17,8 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_classic.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
+from langchain_core.prompts import PromptTemplate
+import os
 import tempfile
 import traceback
 import time
@@ -33,6 +35,31 @@ def get_current_time(timezone: str, location: str) -> str:
     except pytz.UnknownTimeZoneError:
         return f"알 수 없는 타임존: {timezone}"  
     
+
+def load_or_create_vectorstore(embedding, persist_directory="c:/faiss_store"):
+    
+    # 저장 디렉토리가 존재하는지 확인
+    if os.path.exists(persist_directory):
+        # index.faiss 파일이 존재하는지 확인
+        index_file = os.path.join(persist_directory, "index.faiss")
+        pkl_file = os.path.join(persist_directory, "index.pkl")
+        
+        if os.path.exists(index_file) and os.path.exists(pkl_file):
+            try:
+                st.info("📂 기존 학습한 자료를 불러오는 중...")
+                vectorstore = FAISS.load_local(
+                    persist_directory, 
+                    embedding,
+                    allow_dangerous_deserialization=True  # 필요한 경우
+                )
+                st.success("✅ 기존 학습자료를 성공적으로 불러왔습니다!")
+                st.toast("기존 학습 데이터를 사용합니다!", icon="📚")
+                return vectorstore
+            except Exception as e:
+                st.warning(f"⚠️ 기존 파일 로드 실패: {e}")
+        else:
+            return None        
+
 
 def answer_question(query: str):
     st.write("🚀 질문 처리 시작")
@@ -52,12 +79,33 @@ def answer_question(query: str):
         if not relevant_docs:
             st.warning("⚠️ 질문과 관련된 내용을 찾을 수 없습니다.")
             return "죄송합니다. 관련된 정보를 찾지 못했습니다."
+        
 
+
+        template = """당신은 친절한 AI 도우미입니다. 주어진 문서 내용을 바탕으로 질문에 답변해주세요.
+    
+                    문서 내용:
+                    {context}
+
+                    질문: {question}
+
+                    답변 시 다음을 지켜주세요:
+                    1. 문서 내용에 기반하여 정확하게 답변해주세요.
+                    2. 가능한 한 구체적이고 자세하게 설명해주세요.
+                    3. 한국어로 답변해주세요.
+
+                    답변:"""
+
+        prompt = PromptTemplate(
+        template=template,
+        input_variables=["context", "question"]
+    )
         retriever = vectorstore.as_retriever(search_kwargs={"k":3})
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
             retriever=retriever,
+            chain_type_kwargs={"prompt": prompt},
             return_source_documents=False
         )
         result = qa_chain.invoke({"query": query})
@@ -187,9 +235,15 @@ config = {"configurable": {"thread_id": "1"}}
 llm = init_chat_model(
     model = "openai:gpt-4o-mini",
     temperature=0.5, 
-    max_tokens=2000, 
+    max_tokens=1000, 
     timeout=10, 
     max_retries=2, 
+    )
+
+# Embedding 생성
+embedding = OpenAIEmbeddings(
+    model="text-embedding-3-large", 
+    api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
     )
 
 agent = create_agent(
@@ -197,7 +251,7 @@ agent = create_agent(
     tools=[get_current_time, ddg_search_tool],
     middleware=[],
     checkpointer=checkpointer,
-)
+    )
 
 
 
@@ -250,6 +304,11 @@ for msg in st.session_state.messages:
     role = msg["role"]
     content = msg["content"]
     st.chat_message(role).write(content)
+
+vectorstore = load_or_create_vectorstore(
+    embedding=embedding,
+    persist_directory="c:/faiss_store"
+)
 
 # 학습 data가 없으면 초기화
 if "vectorstore" not in st.session_state:
@@ -318,5 +377,7 @@ if prompt := st.chat_input(placeholder="무엇이든 물어보세요?"):
 # 문서 학습 함수 불러오기
 if process1:
     st.session_state["vectorstore"] = process1_f(uploaded_files1)
+
+    
 
     
