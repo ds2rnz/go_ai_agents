@@ -39,7 +39,7 @@ def get_current_time(timezone: str, location: str) -> str:
 def load_vectorstore(embedding, persist_directory="c:/faiss_store"):
     
     # 저장 디렉토리가 존재하는지 확인
-    if not os.path.exists(persist_directory):
+    if not os.path.isdir(persist_directory):
         st.error(f"🚨 지정된 디렉토리 '{persist_directory}'가 존재하지 않습니다.")
         return None
         # index.faiss 파일이 존재하는지 확인
