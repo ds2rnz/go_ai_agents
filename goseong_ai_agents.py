@@ -337,14 +337,55 @@ st.markdown("""
 
 
 with st.sidebar:
-    st.header("⚙️ 문서 :red[학습기]")
-    uploaded_files1 = st.file_uploader(
-    "📎 학습 문서 업로드 창 :red[PDF]파일  :red[3]개만 가능", type=['pdf'], accept_multiple_files=True
-    )
-    process1 = st.button("🚀 학습시작",        
-            type = "primary",
-            disabled=(uploaded_files1 is None))
+    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
+    
+# 문서 학습기
+    st.markdown('<div class="sidebar-box">', unsafe_allow_html=True)
+    
+    st.markdown("""
+        <h2 style="text-align: center; font-size: 1.7rem; color: #000000;">📚 문서 학습기</h2>
+        """, unsafe_allow_html=True)
 
+    st.markdown("""
+        <p class="upload-label">
+            📎 PDF 파일 업로드 
+            <span class="badge">최대 3개</span>
+        </p>
+    """, unsafe_allow_html=True)
+    
+    uploaded_files1 = st.file_uploader(
+        "학습할 PDF 선택",
+        type=['pdf'],
+        accept_multiple_files=True,
+        key="uploader1",
+        label_visibility="collapsed"
+    )
+    
+    # 업로드된 파일 표시
+    if uploaded_files1:
+        st.markdown("""
+            <div style="background: #f0fdf4; padding: 0.5rem; border-radius: 8px; margin-top: 0.5rem;">
+                <p style="margin: 0; font-size: 0.85rem; color: #15803d; font-weight: 500;">
+                    ✅ {}개 파일 선택됨
+                </p>
+            </div>
+        """.format(len(uploaded_files1)), unsafe_allow_html=True)
+        
+        for i, file in enumerate(uploaded_files1[:3], 1):
+            st.markdown(f"""
+                <div style="font-size: 0.8rem; color: #475569; padding: 0.2rem 0.5rem;">
+                    {i}. {file.name[:30]}{'...' if len(file.name) > 30 else ''}
+                </div>
+            """, unsafe_allow_html=True)
+    
+    process1 = st.button(
+        "🚀 학습 시작",
+        key="process1",
+        type="primary",
+        # disabled=(uploaded_files1 is None or len(uploaded_files1) == 0),
+        use_container_width=True
+    )
+    
     st.markdown("---")
     st.markdown("### 📖 :blue[사용방법]")
     st.markdown("""
