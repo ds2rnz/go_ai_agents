@@ -55,7 +55,7 @@ def get_web_search(query: str) -> str:
     )
     results = search.run(query)
     if isinstance(results, dict):
-	    st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
+	    st.toast("웹 검색을 통아여 알아보고 있습니다.", icon="🎉")
     return results
 
     
