@@ -257,7 +257,7 @@ checkpointer = InMemorySaver()
 config = {"configurable": {"thread_id": "1"}}
 
 llm = init_chat_model(
-    model = "openai:gpt-4o-mini",
+    model = "openai:gpt-4o",
     temperature=0.5, 
     max_tokens=1000, 
     timeout=10, 
