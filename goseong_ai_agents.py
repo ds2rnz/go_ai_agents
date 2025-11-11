@@ -5,6 +5,7 @@ from langchain.chat_models import init_chat_model
 from langchain.agents import create_agent
 from datetime import datetime
 from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
+from langchain_community.tools.searx_search.tool import SearxSearchRun
 import pytz
 from langchain_community.tools import DuckDuckGoSearchResults
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
@@ -252,6 +253,7 @@ load_dotenv()
 # OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 ddg_search_tool = DuckDuckGoSearchRun()
+searx_tool = SearxSearchRun()
 
 checkpointer = InMemorySaver()
 config = {"configurable": {"thread_id": "1"}}
@@ -272,7 +274,7 @@ embedding = OpenAIEmbeddings(
 
 agent = create_agent(
     model=llm,
-    tools=[get_current_time, ddg_search_tool],
+    tools=[get_current_time, searx_tool, ddg_search_tool],
     middleware=[],
     system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주세요", 
     checkpointer=checkpointer,
