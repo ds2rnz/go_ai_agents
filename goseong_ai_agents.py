@@ -54,6 +54,8 @@ def get_web_search(query: str) -> str:
         results_separator=';\n'
     )
     results = search.run(query)
+    if isinstance(results, dict):
+	    st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
     return results
 
     
@@ -254,10 +256,10 @@ def process1_f(uploaded_files1):
             status_text.text("✅ 학습자료 저장 완료!")
             st.success("🎉 학습이 완료되었습니다!")
             st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
-            if os.path.isdir(persist_directory):
-                st.info(f"디렉토리 '{persist_directory}'가 정상적으로 생성되었습니다.")
-            else:
-                st.error(f"❌ '{persist_directory}' 디렉토리가 생성되지 않았습니다.")
+            # if os.path.isdir(persist_directory):
+                # st.info(f"디렉토리 '{persist_directory}'가 정상적으로 생성되었습니다.")
+            # else:
+                # st.error(f"❌ '{persist_directory}' 디렉토리가 생성되지 않았습니다.")
             
             return vectorstore
     except Exception as e:
