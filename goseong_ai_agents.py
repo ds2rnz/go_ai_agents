@@ -254,10 +254,8 @@ def process1_f(uploaded_files1):
                 except Exception as e:
                     st.error(f"❌ 배치 {batch_num} 학습자료 저장 실패: {e}")
                     continue
-
             progress_bar.progress(1.0)
             status_text.text("✅ 학습자료 저장 완료!")
-            
             st.success("🎉 학습이 완료되었습니다!")
             st.toast("학습한 문서를 바탕으로 질문해 보세요!", icon="🎉")
             if os.path.isdir(persist_directory):
@@ -266,8 +264,6 @@ def process1_f(uploaded_files1):
                 st.error(f"❌ '{persist_directory}' 디렉토리가 생성되지 않았습니다.")
             
             return vectorstore
-           
-            
     except Exception as e:
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
@@ -275,8 +271,8 @@ def process1_f(uploaded_files1):
 
 
 load_dotenv()
-# OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 searx_tool = SearxSearchRun()
 
 config = {"configurable": {"thread_id": "1"}}
