@@ -54,7 +54,7 @@ def get_web_search(query: str) -> str:
         results_separator=';\n'
     )
     results = search.run(query)
-    if isinstance(results, dict):
+    if isinstance(results, str):
 	    st.toast("웹 검색을 통아여 알아보고 있습니다.", icon="🎉")
     return results
 
@@ -105,7 +105,7 @@ def answer_question(query: str):
         SIMILARITY_THRESHOLD = 1.1
         relevant_docs = [doc for doc, score in docs_with_scores if score < SIMILARITY_THRESHOLD]
         if not relevant_docs:
-            st.warning("⚠️ 질문과 관련된 내용을 찾을 수 없습니다.")
+            # st.warning("⚠️ 질문과 관련된 내용을 찾을 수 없습니다.")
             return "죄송합니다. 관련된 정보를 찾지 못했습니다."
         
 
