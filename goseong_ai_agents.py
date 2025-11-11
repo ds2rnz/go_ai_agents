@@ -48,10 +48,6 @@ def get_web_search(query: str) -> str:
         str: 검색 결과
     """
     custom_wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time="y", max_results=10)
-
-    print('-------- WEB SEARCH --------')
-    print(query)
-    print(custom_wrapper)
     search = DuckDuckGoSearchResults(
         api_wrapper=custom_wrapper,
         source="news, image, text",
