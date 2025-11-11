@@ -35,6 +35,31 @@ def get_current_time(timezone: str, location: str) -> str:
         return result
     except pytz.UnknownTimeZoneError:
         return f"알 수 없는 타임존: {timezone}"  
+
+@tool
+def get_web_search(query: str) -> str:
+	
+    """
+    웹 검색을 수행하는 함수.
+
+    Args:
+        query (str): 검색어
+    Returns:
+        str: 검색 결과
+    """
+    custom_wrapper = DuckDuckGoSearchAPIWrapper(region="kr-kr", time="y", max_results=10)
+
+    print('-------- WEB SEARCH --------')
+    print(query)
+    print(custom_wrapper)
+    search = DuckDuckGoSearchResults(
+        api_wrapper=custom_wrapper,
+        source="news, image, text",
+        results_separator=';\n'
+    )
+    results = search.run(query)
+    return results
+
     
 
 def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
@@ -252,10 +277,8 @@ def process1_f(uploaded_files1):
 load_dotenv()
 # OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ddg_search_tool = DuckDuckGoSearchRun()
 searx_tool = SearxSearchRun()
 
-checkpointer = InMemorySaver()
 config = {"configurable": {"thread_id": "1"}}
 
 llm = init_chat_model(
@@ -274,10 +297,9 @@ embedding = OpenAIEmbeddings(
 
 agent = create_agent(
     model=llm,
-    tools=[get_current_time, searx_tool, ddg_search_tool],
+    tools=[get_current_time, searx_tool, get_web_search],
     middleware=[],
     system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주세요", 
-    checkpointer=checkpointer,
     )
 
 
