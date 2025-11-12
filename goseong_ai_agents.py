@@ -293,7 +293,7 @@ agent = create_agent(
     model=llm,
     tools=[get_current_time, get_web_search],
     middleware=[],
-    system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주세요 모르는 내용이면 웹검색을 해주세요 한글로 답해주세요", 
+    system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주고 모르는 내용이면 검색을 꼭해서 답변해줘 그리고 한글로 답해주세요", 
     )
 
 
