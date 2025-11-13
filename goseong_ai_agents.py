@@ -69,6 +69,7 @@ def login_page():
                         
                         st.success(f"환영합니다, {user_info['name']}님!")
                         time.sleep(3)
+                        st.switch_page("test1.py")
                         dashboard_page()
                         # st.rerun()  # 페이지 새로고침
                         # subprocess.Popen("streamlit run test1.py")
