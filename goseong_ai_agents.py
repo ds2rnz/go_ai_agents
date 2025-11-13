@@ -19,7 +19,7 @@ if "session_logs" not in st.session_state:
 
 def dashboard_page():
     st.rerun()
-    subprocess.Popen(["python", "test1.py"])
+    subprocess.Popen("streamlit run test1.py")
 
 # 로그인 확인 함수
 def check_login(user_id, name):
