@@ -57,7 +57,7 @@ def show_login_page():
                         with st.spinner("로그인 중..."):
                             time.sleep(1)
                         
-                        st.session_state.logged_in = True
+                        st.session_state.logged_in = user_id
                         st.session_state.user_info = user_info
                         st.success(f"환영합니다, {user_info['name']}님!")
                         time.sleep(1)
@@ -337,8 +337,8 @@ def show_main_app():
         # 사용자 정보 표시
         st.markdown(f"""
             <div style="background: #e0f2fe; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <p style="margin: 0; font-weight: bold; color: #0c4a6e;">👤 {st.session_state.user_info['name']}</p>
-                <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #075985;">ID: {st.session_state.user_info['login_id']}</p>
+                <h3 style="margin: 0; font-weight: bold; color: #0c4a6e;">👤 {st.session_state.user_info['name']}</h3>
+                <h3 style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #075985;">ID: {st.session_state.logged_in['user_id']}</h3>
             </div>
         """, unsafe_allow_html=True)
         
