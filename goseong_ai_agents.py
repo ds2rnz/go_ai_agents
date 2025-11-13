@@ -53,10 +53,7 @@ def get_web_search(query: str) -> str:
         results_separator=';\n')
     
     results = search.run(query)
-
-    if isinstance(results, True):
-	    st.toast("웹 검색을 통아여 알아보고 있습니다.", icon="🎉")
-        
+    st.toast("웹 검색을 통아여 알아보고 있습니다.", icon="🎉")
     return results
 
     
