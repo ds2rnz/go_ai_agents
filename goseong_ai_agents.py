@@ -18,7 +18,8 @@ if "session_logs" not in st.session_state:
     st.session_state.session_logs = []
 
 def dashboard_page():
-    subprocess.run(["python", "agent_test4.py"])
+    st.rerun()
+    subprocess.run(["python", "test1.py"])
 
 # 로그인 확인 함수
 def check_login(user_id, name):
@@ -68,8 +69,9 @@ def login_page():
                         
                         st.success(f"환영합니다, {user_info['name']}님!")
                         time.sleep(3)
+                        dashboard_page()
                         # st.rerun()  # 페이지 새로고침
-                        subprocess.Popen("streamlit run test1.py")
+                        # subprocess.Popen("streamlit run test1.py")
 
                     else:
                         st.error("아이디 또는 비밀번호가 올바르지 않습니다.")
