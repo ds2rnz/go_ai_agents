@@ -338,7 +338,7 @@ def show_main_app():
         st.markdown(f"""
             <div style="background: #e0f2fe; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
                 <h3 style="margin: 0; font-weight: bold; color: #0c4a6e;">👤 {st.session_state.user_info['name']}</h3>
-                <h3 style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #075985;">ID: {st.session_state.logged_in['user_id']}</h3>
+                <h3 style="margin: 0.5rem 0 0 0; font-size: 0.85rem; color: #075985;">ID: {st.session_state.logged_in}</h3>
             </div>
         """, unsafe_allow_html=True)
         
