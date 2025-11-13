@@ -43,11 +43,11 @@ def show_login_page():
 
     with col2:
   
-        st.markdown("""
-            <h2 style="text-align: center; color: #2563eb; margin-bottom: 2rem;">
-                AI 도우미를 사용하시려면 로그인 해주세요
-            </h2>
-        """, unsafe_allow_html=True)
+       # st.markdown("""
+       #     <h2 style="text-align: center; color: #2563eb; margin-bottom: 2rem;">
+       #         AI 도우미를 사용하시려면 로그인 해주세요
+       #     </h2>
+       # """, unsafe_allow_html=True)
     
     
         with st.form("login_form"):
@@ -75,6 +75,15 @@ def show_login_page():
                     st.warning("⚠️ 로그인 ID 또는 사용자이름을 모든 입력해주세요.")
 
         st.markdown('</div>', unsafe_allow_html=True)
+
+        # 계정 안내
+        with st.expander("📝 사용자 계정 입력방법"):
+            st.info("""
+            **사용자 계정:**
+            - 아이디: user12345  / 새올 로그인 ID 입력
+            - 사용자이름: 홍길동  /  새올 ID 사용자명
+
+            """)
 
         # 하단 정보
         st.markdown("""
