@@ -43,13 +43,6 @@ def show_login_page():
 
     with col2:
   
-       # st.markdown("""
-       #     <h2 style="text-align: center; color: #2563eb; margin-bottom: 2rem;">
-       #         AI 도우미를 사용하시려면 로그인 해주세요
-       #     </h2>
-       # """, unsafe_allow_html=True)
-    
-    
         with st.form("login_form"):
             user_id = st.text_input("아이디", placeholder="새올아이디를 입력하세요")
             name = st.text_input("사용자이름",  placeholder="사용자 이름을 입력하세요")
@@ -76,6 +69,14 @@ def show_login_page():
 
         st.markdown('</div>', unsafe_allow_html=True)
 
+        # 하단 정보
+        st.markdown("""
+            <div style="text-align: center; margin-top: 3rem; color: #64748b;">
+                <p>Made by 🔍 총무행정관 정보관리팀</p>
+                <p>v1.0.0 | 2025</p>
+            </div>
+        """, unsafe_allow_html=True)
+       
         # 계정 안내
         with st.expander("📝 사용자 계정 입력방법"):
             st.info("""
@@ -85,13 +86,6 @@ def show_login_page():
 
             """)
 
-        # 하단 정보
-        st.markdown("""
-            <div style="text-align: center; margin-top: 3rem; color: #64748b;">
-                <p>Made by 🔍 총무행정관 정보관리팀</p>
-                <p>v1.0.0 | 2025</p>
-            </div>
-        """, unsafe_allow_html=True)
 
 
 # ==================== 기존 함수들 ====================
