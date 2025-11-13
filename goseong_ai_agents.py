@@ -83,7 +83,7 @@ def show_login_page():
             **사용자 계정:**
             - 아이디: user12345  / 새올 로그인 ID 입력
             - 사용자이름: 홍길동  /  새올 ID 사용자명
-
+            "⚠️ 로그인 에러 발생시 정보관리팀 📞680-3463으로 연락주세요.
             """)
 
 
@@ -337,8 +337,8 @@ def show_main_app():
         # 사용자 정보 표시
         st.markdown(f"""
             <div style="background: #e0f2fe; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <p style="margin: 0; font-weight: bold; color: #0c4a6e;">👤 {st.session_state.user_info['name']}</p>
-                <h3 style="margin: 0.5rem 0 0 0; font-size: 1.5rem; color: #075985;">ID: {st.session_state.logged_in}</h3>
+                <p style="margin: 0; font-weight: bold; font-size: 1.2rem; color: #0c4a6e;">👤 {st.session_state.user_info['name']}</p>
+                <h3 style="margin: 0.5rem 0 0 0; font-size: 1.2rem; color: #075985;">ID: {st.session_state.logged_in}</h3>
             </div>
         """, unsafe_allow_html=True)
         
