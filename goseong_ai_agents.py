@@ -39,15 +39,16 @@ def show_login_page():
     st.title("🔐 로그인")
     
     # 중앙 정렬을 위한 컬럼
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
 
     with col2:
   
         st.markdown("""
-            <h1 style="text-align: center; color: #2563eb; margin-bottom: 2rem;">
-                🔐 AI 도우미를 사용하시려면 로그인 해주세요
-            </h1>
+            <h2 style="text-align: center; color: #2563eb; margin-bottom: 2rem;">
+                AI 도우미를 사용하시려면 로그인 해주세요
+            </h2>
         """, unsafe_allow_html=True)
+    
     
         with st.form("login_form"):
             user_id = st.text_input("아이디", placeholder="새올아이디를 입력하세요")
