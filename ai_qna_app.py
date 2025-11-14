@@ -72,7 +72,11 @@ agent = create_agent(
     model=llm,
     tools=[get_current_time, get_web_search],
     middleware=[],
-    system_prompt="사용자가 질문을하면 구체적이고 자세하게 설명해주고 모르는 내용이면 인터넷 검색을 꼭해서 답변해줘 그리고 한글로 답해주세요", 
+    system_prompt="1.사용자가 질문을하면 구체적이고 자세하게 설명해주세요
+                   2.모르는 내용이면 인터넷 검색을 꼭해서 답변해주세요
+                   3.이 지역은 강원도 고성군입니다
+                   4.고성군수는 함명준입니다
+                   5.한글로 답해주세요", 
     )
 
 
@@ -232,6 +236,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
