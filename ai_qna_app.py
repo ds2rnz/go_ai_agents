@@ -88,7 +88,7 @@ def answer_question(query: str):
     try:
         docs_with_scores = vectorstore.similarity_search_with_score(query, k=3)
         for i, (doc, score) in enumerate(docs_with_scores, 1):
-            st.toast(f"  문서 {i} 유사도: {score:.4f}")
+            st.toast(f"  문서 {i} 유사도: {score:.4f}", icon="🎉")
 
         SIMILARITY_THRESHOLD = 1.1
         relevant_docs = [doc for doc, score in docs_with_scores if score < SIMILARITY_THRESHOLD]
@@ -232,5 +232,6 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
