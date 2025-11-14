@@ -21,8 +21,8 @@ import tempfile
 import traceback
 import time
 from users_db import USERS_DB
-from main_ai_app import show_main_app   # ai agent 메인 함수
-from login_app import show_login_page, show_main_app  # 로그인 함수
+from main_ai_app import show_main_app, show_main_app    # ai agent 메인 함수
+from login_app import show_login_page, check_login      # 로그인 함수
 
 
 
