@@ -62,6 +62,12 @@ llm = init_chat_model(
     max_retries=2, 
     )
 
+embedding = OpenAIEmbeddings(
+    model="text-embedding-3-large", 
+    api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+    )
+
+
 agent = create_agent(
     model=llm,
     tools=[get_current_time, get_web_search],
@@ -226,3 +232,4 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
