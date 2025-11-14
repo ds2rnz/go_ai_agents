@@ -3,7 +3,7 @@ import os
 from langchain_classic.chains import RetrievalQA
 from langchain_community.vectorstores import FAISS
 from ai_qna_app import process1_f, ai_answer, answer_question
-# from goseong_ai_agents import embedding
+from goseong_ai_agents import embedding
 
 
 
@@ -206,6 +206,7 @@ def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
             return None
     else:
         return None        
+
 
 
 
