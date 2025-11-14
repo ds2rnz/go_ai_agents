@@ -29,7 +29,11 @@ pytz==2024.2
 langgraph==1.0.1
 
 # Utils
-
 pandas==2.3.3
+
+# 내부 함수
+main_ai_app
+login_app
+
 
 
