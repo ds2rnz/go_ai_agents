@@ -128,7 +128,7 @@ def show_main_app():
     # vectorstore 로드
     if "vectorstore" not in st.session_state:
         st.session_state["vectorstore"] = load_vectorstore(
-            embedding=embedding,
+            embedding=get_embedding(),
             persist_directory="C:/faiss_store"
         )
 
@@ -206,6 +206,7 @@ def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
             return None
     else:
         return None        
+
 
 
 
