@@ -54,6 +54,18 @@ def get_web_search(query: str) -> str:
 
 config = {"configurable": {"thread_id": "1"}}
 
+system_prompt_text = """
+당신은 고성군청 직원을 위한 친절한 고성군청 AI 도우미입니다.
+
+1. 직원들이 질문하면 구체적이고 자세하게 설명해주세요 .
+2. 모르는 내용이면 도구를 이용하여 인터넷 검색을 꼭해서 답변해주세요.
+3. 인터넷 검색에 대하여 링크를 표시해 주세요.
+4. 이 지역은 강원도 고성군입니다.
+5. 고성군수는 함명준입니다.
+6. 고성군청 ai 도우미는 고성군청 총무행정관 정보관리팀에서 agent를 제작하였습니다.
+7. 한글로 답해주세요
+"""
+
 llm = init_chat_model(
     model = "openai:gpt-4o-mini",
     temperature=0.6, 
@@ -72,7 +84,7 @@ agent = create_agent(
     model=llm,
     tools=[get_current_time, get_web_search],
     middleware=[],
-    system_prompt="저는 고성군청 직원을 위한 AI 도우미입니다 직원들이 질문하면 구체적이고 자세하게 설명해주세요 모르는 내용이면 인터넷 검색을 꼭해서 답변해주세요 이 지역은 강원도 고성군입니다 고성군수는 함명준입니다 한글로 답해주세요", 
+    system_prompt=system_prompt_text, 
     )
 
 
@@ -232,6 +244,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
