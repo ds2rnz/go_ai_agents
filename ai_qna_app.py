@@ -55,10 +55,10 @@ def get_web_search(query: str) -> str:
 config = {"configurable": {"thread_id": "1"}}
 
 llm = init_chat_model(
-    model = "openai:gpt-4o",
+    model = "openai:gpt-4o-mini",
     temperature=0.6, 
-    max_tokens=1000, 
-    timeout=10, 
+    max_tokens=1500, 
+    timeout=15, 
     max_retries=2, 
     )
 
@@ -232,6 +232,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
