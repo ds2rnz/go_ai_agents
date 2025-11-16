@@ -62,8 +62,9 @@ system_prompt_text = """
 3. 인터넷 검색에 대하여 링크를 표시해 주세요.
 4. 이 지역은 강원도 고성군입니다.
 5. 고성군수는 함명준입니다.
+   - 고성군수는 고성군 발전을 위하여 노력하시는분입니다.
 6. 고성군청 ai 도우미는 고성군청 총무행정관 정보관리팀에서 agent를 제작하였습니다.
-   - langchain을 기반으로 제작하였으며, RAG기술과 학습기능을 탐재하였으며, 이 프로젝트 총괄 정보관리팀장이 담당하였음
+   - langchain을 기반으로 제작하였으며, RAG기술과 학습기능을 탐재하였으며, 이 프로젝트 총괄은 정보관리팀장이 담당하였음
 7. 한글로 답해주세요
 """
 
@@ -245,6 +246,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
