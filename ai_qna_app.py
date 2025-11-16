@@ -78,13 +78,13 @@ agent = create_agent(
 
 
 def answer_question(query: str):
-    st.write("🚀 질문 처리 시작")
+    st.toast("🚀 질문 처리 시작")
     vectorstore = st.session_state.get("vectorstore")
     if vectorstore is None:
         st.warning("⚠️ PDF 학습이 아직 완료되지 않았습니다.")
         return "먼저 PDF 문서를 업로드하고 학습시켜 주세요."
 
-    st.write("✅ vectorstore 확인 완료")
+    st.toast("✅ vectorstore 확인 완료")
     try:
         docs_with_scores = vectorstore.similarity_search_with_score(query, k=3)
         for i, (doc, score) in enumerate(docs_with_scores, 1):
@@ -232,6 +232,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
