@@ -188,8 +188,8 @@ def process1_f(uploaded_files1):
                     data = loader.load()
                     
                     splitter = RecursiveCharacterTextSplitter(
-                        chunk_size=300, 
-                        chunk_overlap=50
+                        chunk_size=600, 
+                        chunk_overlap=100
                     )
                     splits = splitter.split_documents(data)
                     all_splits.extend(splits)
@@ -251,6 +251,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
