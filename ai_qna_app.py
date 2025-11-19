@@ -16,6 +16,7 @@ import time
 import pytz
 from datetime import datetime
 from langchain.chat_models import init_chat_model
+from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
 
 @tool
@@ -73,13 +74,21 @@ system_prompt_text = """
 9. 한글로 답해주세요
 """
 
-llm = init_chat_model(
-    model = "openai:gpt-4o",
+#llm = init_chat_model(
+ #   model = "openai:gpt-4o",
+  #  temperature=0.6, 
+   # max_tokens=1000, 
+    # timeout=20, 
+    # max_retries=2, 
+    # )
+
+llm = ChatOpenAI(
+    model = "gpt-5",
     temperature=0.6, 
     max_tokens=1000, 
-    timeout=20, 
-    max_retries=2, 
+    timeout=10, 
     )
+
 
 embedding = OpenAIEmbeddings(
     model="text-embedding-3-large", 
@@ -251,6 +260,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
