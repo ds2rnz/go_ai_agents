@@ -83,7 +83,7 @@ system_prompt_text = """
     # )
 
 llm = ChatOpenAI(
-    model = "gpt-4.5",
+    model = "gpt-4o",
     temperature=0.6, 
     max_tokens=1000, 
     timeout=20, 
@@ -260,6 +260,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
