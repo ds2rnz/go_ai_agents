@@ -69,7 +69,7 @@ system_prompt_text = """
 7. 고성군수는 함명준입니다.
    - 고성군수는 고성군 발전을 위하여 노력하시는분입니다.
 8. 고성군청 ai 도우미는 고성군청 총무행정관 정보관리팀에서 agent를 제작하였습니다.
-   - langchain을 기반으로 제작하였으며, RAG기술과 학습기능을 탐재하였으며, 지속적으로 기능추가 예정임.
+   - langchain을 기반으로 제작하였으며, RAG기술과 학습기능을 탐재하였으며, 이 프로젝트 총괄은 정보관리팀장미여, 지속적으로 기능추가 예정임.
 9. 한글로 답해주세요
 """
 
@@ -251,6 +251,7 @@ def process1_f(uploaded_files1):
         st.error(f"❌ 학습 중 오류 발생: {e}")
         st.code(traceback.format_exc(), language="python")
         return None
+
 
 
 
