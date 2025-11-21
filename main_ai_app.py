@@ -144,7 +144,7 @@ def show_main_app():
                 answer = answer_question(prompt)
 
             if answer and "죄송합니다. " in answer or len(answer) < 30:
-                st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
+                # st.info("💡 학습된 문서에서 관련 내용을 찾지 못했습니다. 일반 AI 모드로 전환합니다.")
                 
                 with st.spinner("답변 생성 중..."):
                     try:
@@ -206,6 +206,7 @@ def load_vectorstore(embedding, persist_directory="C:/faiss_store"):
             return None
     else:
         return None        
+
 
 
 
