@@ -17,6 +17,12 @@ USERS_DB = {
         "role": "user",
         "num": "1"
     },
+    "woohihi21": {
+        "login_id": "GIMI1818",
+        "name": "우명희",
+        "role": "user",
+        "num": "2"
+    },
     "GIMI1818": {
         "login_id": "GIMI1818",
         "name": "김남일",
