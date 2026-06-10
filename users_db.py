@@ -11,6 +11,12 @@ USERS_DB = {
         "role": "user",
         "num": "0"
     },
+    "bumkorea": {
+        "login_id": "BUMKOREA",
+        "name": "기용범",
+        "role": "user",
+        "num": "1"
+    },
     "ha1963": {
         "login_id": "HA196321",
         "name": "박은숙",
