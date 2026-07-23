@@ -18,6 +18,9 @@ from datetime import datetime
 from langchain.chat_models import init_chat_model
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
+import base64
+from openai import OpenAI
+from dotenv import load_dotenv
 
 @tool
 def get_current_time(timezone: str, location: str) -> str:
@@ -52,51 +55,158 @@ def get_web_search(query: str) -> str:
     return results
 
 
+@tool
+def generate_image(
+    prompt: str,
+    size: str = "1024x1024",
+    quality: str = "medium"
+) -> str:
+    """
+    사용자의 설명을 바탕으로 새로운 이미지를 생성합니다.
 
-config = {"configurable": {"thread_id": "1"}}
+    사용자가 그림, 포스터, 일러스트, 사진, 배너, 캐릭터 등의
+    생성을 요청했을 때 사용합니다.
 
-system_prompt_text = """
-당신은 고성군청 직원을 위한 친절한 고성군청 AI 도우미입니다.
+    Args:
+        prompt: 생성할 이미지에 대한 구체적인 설명
+        size: 이미지 크기. 1024x1024, 1536x1024, 1024x1536 중 하나
+        quality: 이미지 품질. low, medium, high 중 하나
+    """
 
-1. 직원들이 질문하면 구체적이고 자세하게 설명해주세요 .
-2. 모르는 내용이면 도구를 이용하여 인터넷 검색을 꼭해서 답변해주세요.
-3. 인터넷 검색에 대하여 링크를 표시해 주세요.
-4. 이 지역은 강원도 고성군입니다.
-   - 고성군청 주소는 강원특별자치도 고성군 간성읍 고성중앙길9입니다.
-5. 강원도 고성군 관련 관광지 질문이 들어오면 아래 홈페이지를 참고하여 답해주세요.
-   - 고성군 관광포털 사이트 : https://gwgs.go.kr/tour/index.do
-6. 강원도 고성군 고성군청에 관하여 질문이 들어오면 아래 홈페이지를 참고하여 답해주세요
-   - 고성군청 홈페이지 : https://gwgs.go.kr
-7. 고성군수는 함명준입니다.
-   - 고성군수는 고성군 발전을 위하여 노력하시는분입니다.
-8. 고성군청 ai 도우미는 고성군청 총무행정관 정보관리팀에서 agent를 제작하였습니다.
-   - langchain을 기반으로 제작하였으며, RAG기술과 학습기능을 탐재하였으며, 지속적으로 기능추가 예정입니다.
-9. 한글로 답해주세요
-"""
+    allowed_sizes = {
+        "1024x1024",
+        "1536x1024",
+        "1024x1536",
+    }
+    allowed_qualities = {"low", "medium", "high"}
 
-llm = init_chat_model(
-    model = "openai:gpt-5.5",
-    # temperature=0.9, 
-    # max_tokens=2000, 
-    # timeout=100,
-    # max_retries=2, 
-    )
+    if size not in allowed_sizes:
+        size = "1024x1024"
+
+    if quality not in allowed_qualities:
+        quality = "medium"
+
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        result = client.images.generate(
+            model="gpt-image-2",
+            prompt=prompt,
+            size=size,
+            quality=quality,
+            output_format="png",
+            n=1,
+        )
+
+        image_base64 = result.data[0].b64_json
+
+        if not image_base64:
+            return "이미지 데이터가 반환되지 않았습니다."
+
+        image_bytes = base64.b64decode(image_base64)
+
+        # 도구 실행 결과를 Streamlit 화면 출력용으로 임시 보관
+        if "pending_images" not in st.session_state:
+            st.session_state.pending_images = []
+
+        st.session_state.pending_images.append({
+            "prompt": prompt,
+            "image_bytes": image_bytes,
+        })
+
+        return (
+            "이미지를 성공적으로 생성했습니다. "
+            "이미지는 사용자의 채팅 화면에 표시됩니다."
+        )
+
+    except Exception as e:
+        error_message = f"{type(e).__name__}: {e}"
+
+        if "pending_image_errors" not in st.session_state:
+            st.session_state.pending_image_errors = []
+
+        st.session_state.pending_image_errors.append(error_message)
+
+        return f"이미지 생성에 실패했습니다. 오류: {error_message}"
 
 
-embedding = OpenAIEmbeddings(
-    model="text-embedding-3-large", 
-    api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
-    )
+def edit_image(uploaded_image, prompt: str, size: str = "auto", quality: str = "medium") -> str:
+    
+    """ 업로드한 이미지를 사용자의 지시에 맞게 수정합니다."""
+    
+    if not uploaded_image:
+        return "수정할 이미지를 업로드해 주세요."
+    if not isinstance(prompt, str) or not prompt.strip():
+        return "이미지 수정 내용을 입력해 주세요."
 
+    if not isinstance(uploaded_image, (list, tuple)):
+        uploaded_image = [uploaded_image]
+    if len(uploaded_image) > 3:
+        return "수정할 이미지는 최대 3개까지 업로드할 수 있습니다."
 
-agent = create_agent(
-    model=llm,
-    tools=[get_current_time, get_web_search],
-    middleware=[],
-    system_prompt=system_prompt_text, 
-    )
+    if size not in {"auto", "1024x1024", "1536x1024", "1024x1536"}:
+        size = "auto"
+    if quality not in {"low", "medium", "high", "auto"}:
+        quality = "medium"
 
+    temp_paths = []
+    image_files = []
+    try:
+        for index, uploaded_image in enumerate(uploaded_image, 1):
+            file_name = getattr(uploaded_image, "name", f"input_{index}.png")
+            suffix = Path(file_name).suffix.lower()
+            if suffix not in {".png", ".jpg", ".jpeg", ".webp"}:
+                return "PNG, JPG, JPEG, WEBP 이미지만 수정할 수 있습니다."
 
+            image_data = uploaded_image.getvalue()
+            if not image_data:
+                return f"{file_name} 이미지가 비어 있습니다."
+            if len(image_data) > 50 * 1024 * 1024:
+                return f"{file_name}: 각 이미지는 50MB 이하여야 합니다."
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                temp_file.write(image_data)
+                temp_paths.append(temp_file.name)
+
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        image_files = [open(path, "rb") for path in temp_paths]
+        image_input = image_files[0] if len(image_files) == 1 else image_files
+        result = client.images.edit(
+            model="gpt-image-2",
+            image=image_input,
+            prompt=prompt.strip(),
+            size=size,
+            quality=quality,
+            output_format="png",
+            n=1,
+        )
+
+        image_base64 = result.data[0].b64_json
+        if not image_base64:
+            return "수정된 이미지 데이터가 반환되지 않았습니다."
+
+        if "pending_images" not in st.session_state:
+            st.session_state.pending_images = []
+        st.session_state.pending_images.append({
+            "prompt": f"이미지 수정: {prompt.strip()}",
+            "image_bytes": base64.b64decode(image_base64),
+        })
+        return "이미지를 성공적으로 수정했습니다."
+
+    except Exception as e:
+        error_message = f"{type(e).__name__}: {e}"
+        if "pending_image_errors" not in st.session_state:
+            st.session_state.pending_image_errors = []
+        st.session_state.pending_image_errors.append(error_message)
+        return f"이미지 수정에 실패했습니다. 오류: {error_message}"
+
+    finally:
+        for image_file in image_files:
+            image_file.close()
+        for temp_path in temp_paths:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+    
 
 def answer_question(query: str):
     st.toast("🚀 질문 처리 시작")
@@ -206,7 +316,7 @@ def process1_f(uploaded_files1):
 
             embedding = OpenAIEmbeddings(
                 model="text-embedding-3-large", 
-                api_key=st.secrets.get("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY"))
+                api_key=OPENAI_API_KEY,
             )
             
             persist_directory = "C:/faiss_store"
@@ -258,51 +368,47 @@ def process1_f(uploaded_files1):
 
 
 
+load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+config = {"configurable": {"thread_id": "1"}}
+
+system_prompt_text = """
+당신은 고성군청 직원을 위한 친절한 고성군청 AI 도우미입니다.
+
+1. 직원들이 질문하면 구체적이고 자세하게 설명해주세요 .
+2. 모르는 내용이면 도구를 이용하여 인터넷 검색을 꼭해서 답변해주세요.
+3. 인터넷 검색에 대하여 링크를 표시해 주세요.
+4. 이 지역은 강원특별자치도 고성군입니다.
+   - 고성군청 주소는 강원특별자치도 고성군 간성읍 고성중앙길9입니다.
+5. 강원도 고성군 관련 관광지 질문이 들어오면 아래 홈페이지를 참고하여 답해주세요.
+   - 고성군 관광포털 사이트 : https://gwgs.go.kr/tour/index.do
+6. 강원도 고성군 고성군청에 관하여 질문이 들어오면 아래 홈페이지를 참고하여 답해주세요
+   - 고성군청 홈페이지 : https://gwgs.go.kr
+7. 고성군수는 함명준입니다.
+   - 고성군수는 고성군 발전을 위하여 노력하시는분입니다.
+8. 고성군청 ai 도우미는 고성군청 총무행정관 정보관리팀에서 agent를 제작하였습니다.
+   - langchain을 기반으로 제작하였으며, RAG기술과 학습기능을 탐재하였으며, 지속적으로 기능추가 예정입니다.
+9. 한글로 답해주세요
+"""
+
+llm = init_chat_model(
+    model = "openai:gpt-5.5",
+    # temperature=0.9, 
+    # max_tokens=2000, 
+    # timeout=100,
+    # max_retries=2, 
+    )
 
 
+embedding = OpenAIEmbeddings(
+    model="text-embedding-3-large", 
+    api_key = os.getenv("OPENAI_API_KEY"))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+agent = create_agent(
+    model=llm,
+    tools=[get_current_time, get_web_search, generate_image],
+    middleware=[],
+    system_prompt=system_prompt_text, 
+    )

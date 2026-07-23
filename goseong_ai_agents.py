@@ -16,6 +16,8 @@ from langchain_classic.chains import RetrievalQA
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_core.prompts import PromptTemplate
+import base64
+from openai import OpenAI
 from pathlib import Path
 import tempfile
 import traceback
@@ -62,6 +64,79 @@ def get_web_search(query: str) -> str:
     return results
 
 
+@tool
+def generate_image(
+    prompt: str,
+    size: str = "1024x1024",
+    quality: str = "medium"
+) -> str:
+    """
+    사용자의 설명을 바탕으로 새로운 이미지를 생성합니다.
+
+    사용자가 그림, 포스터, 일러스트, 사진, 배너, 캐릭터 등의
+    생성을 요청했을 때 사용합니다.
+
+    Args:
+        prompt: 생성할 이미지에 대한 구체적인 설명
+        size: 이미지 크기. 1024x1024, 1536x1024, 1024x1536 중 하나
+        quality: 이미지 품질. low, medium, high 중 하나
+    """
+
+    allowed_sizes = {
+        "1024x1024",
+        "1536x1024",
+        "1024x1536",
+    }
+    allowed_qualities = {"low", "medium", "high"}
+
+    if size not in allowed_sizes:
+        size = "1024x1024"
+
+    if quality not in allowed_qualities:
+        quality = "medium"
+
+    try:
+        client = OpenAI(api_key=OPENAI_API_KEY)
+
+        result = client.images.generate(
+            model="gpt-image-2",
+            prompt=prompt,
+            size=size,
+            quality=quality,
+            output_format="png",
+            n=1,
+        )
+
+        image_base64 = result.data[0].b64_json
+
+        if not image_base64:
+            return "이미지 데이터가 반환되지 않았습니다."
+
+        image_bytes = base64.b64decode(image_base64)
+
+        # 도구 실행 결과를 Streamlit 화면 출력용으로 임시 보관
+        if "pending_images" not in st.session_state:
+            st.session_state.pending_images = []
+
+        st.session_state.pending_images.append({
+            "prompt": prompt,
+            "image_bytes": image_bytes,
+        })
+
+        return (
+            "이미지를 성공적으로 생성했습니다. "
+            "이미지는 사용자의 채팅 화면에 표시됩니다."
+        )
+
+    except Exception as e:
+        error_message = f"{type(e).__name__}: {e}"
+
+        if "pending_image_errors" not in st.session_state:
+            st.session_state.pending_image_errors = []
+
+        st.session_state.pending_image_errors.append(error_message)
+
+        return f"이미지 생성에 실패했습니다. 오류: {error_message}"
 
 
 # ==================== 메인 실행 ====================
