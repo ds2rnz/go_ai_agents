@@ -15,9 +15,12 @@ openai==2.6.1
 
 # Document Processing
 pypdf==6.0.0
+openpyxl==3.1.5
+xlrd==2.0.2
+python-pptx==1.0.2
 
 # Vector Stores
-faiss-cpu==1.12.0
+faiss-cpu==1.14.3
 chromadb==1.1.1
 
 # Tools
@@ -30,7 +33,6 @@ langgraph==1.0.1
 
 # Utils
 pandas==2.3.3
-
 
 
 
