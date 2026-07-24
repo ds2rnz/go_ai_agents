@@ -11,6 +11,24 @@ USERS_DB = {
         "role": "user",
         "num": "0"
     },
+    "sunjinnam": {
+        "login_id": "sunjinnam123",
+        "name": "안순정",
+        "role": "user",
+        "num": "1"
+    },
+    "ssekyu": {
+        "login_id": "ssekyu123",
+        "name": "최상규",
+        "role": "user",
+        "num": "1"
+    },
+    "burnjk": {
+        "login_id": "burnjk123",
+        "name": "최종권",
+        "role": "user",
+        "num": "1"
+    },
     "bumkorea": {
         "login_id": "BUMKOREA",
         "name": "기용범",
