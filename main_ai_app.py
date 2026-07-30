@@ -203,9 +203,9 @@ def _render_header():
                 고성군청 직원 전용 AI 업무 공간입니다.
             </p>
             <div class="gs-chip-row">
-                <span class="gs-chip">📚 문서 학습</span>
                 <span class="gs-chip">🔎 정보 검색</span>
-                <span class="gs-chip">🎨 이미지 생성</span>
+                <span class="gs-chip">📚 문서 학습</span>
+                <span class="gs-chip">🎨 이미지 생성·편집</span>
             </div>
         </div>
         """,
